@@ -163,7 +163,7 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>✨</div>
-                <p style={{ fontSize: '1.1rem' }}>Generating detailed AI explanation and fetching resources...</p>
+                <p style={{ fontSize: '1.1rem' }}>Generating a simple explanation and practical example...</p>
               </div>
             ) : error ? (
               <div style={{ color: '#dc2626', padding: '1rem', background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px' }}>
@@ -196,62 +196,16 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
                 
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Code / Practical Example</h4>
-                  <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.6, background: 'var(--bg-color, #f9fafb)', padding: '1.2rem', borderRadius: '8px', borderLeft: '4px solid var(--brand, #3b82f6)', fontFamily: 'monospace' }}>
-                    {detail.example}
+                  <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.7, background: 'var(--bg-color, #f9fafb)', padding: '1.2rem', borderRadius: '8px', borderLeft: '4px solid var(--brand, #3b82f6)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                    {detail.illustration || detail.example}
                   </p>
                 </div>
-                
-                <div style={{ marginTop: '0.5rem' }}>
-                  <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Top Trending Resources</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    {detail.resources.map((res, i) => {
-                      const isYouTube = res.platform === 'YouTube' || res.url.includes('youtube') || res.url.includes('youtu.be');
-                      const platformColor = isYouTube ? '#ef4444' : '#3b82f6'; // Red for YT, Blue for Google
-                      const platformIcon = isYouTube ? '📺' : '🌐';
-                      
-                      return (
-                        <a 
-                          key={i}
-                          href={res.url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          style={{ 
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            padding: '1.2rem', 
-                            borderRadius: '8px', 
-                            border: '1px solid var(--border-color, #e5e7eb)',
-                            textDecoration: 'none',
-                            color: 'var(--text-color, #111827)',
-                            transition: 'all 0.2s ease',
-                            background: 'transparent'
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = platformColor;
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = `0 4px 12px -2px ${platformColor}33`;
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = 'var(--border-color)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        >
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                              <span style={{ fontSize: '1.2rem' }}>{platformIcon}</span>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: platformColor, textTransform: 'uppercase' }}>
-                                {isYouTube ? 'YouTube Source' : 'Web Article'}
-                              </span>
-                            </div>
-                            <h5 style={{ margin: '0 0 0.4rem 0', fontSize: '1.05rem', lineHeight: 1.3 }}>{res.title}</h5>
-                            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{res.description}</p>
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Real World Example</h4>
+                  <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.7, background: 'var(--surface-strong, #f8fafc)', padding: '1.2rem', borderRadius: '8px', border: '1px solid var(--border-color, #e5e7eb)' }}>
+                    {detail.example}
+                  </p>
                 </div>
 
                 {/* Progress Tracking Injector */}

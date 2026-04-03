@@ -42,6 +42,25 @@ body {
   background: var(--bg);
 }
 
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.68;
+  }
+}
+
 .app-frame {
   min-height: 100vh;
   padding: 20px;
@@ -99,6 +118,85 @@ body {
 .brand-logo-image-spinner {
   transform: scale(2.2);
   transform-origin: center;
+}
+
+.header-profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.header-profile-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.header-profile-chip.is-authenticated {
+  background: rgba(79, 70, 229, 0.12);
+  border-color: rgba(79, 70, 229, 0.24);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
+}
+
+.profile-chip-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid var(--brand);
+}
+
+.profile-chip-avatar-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+}
+
+.profile-chip-loader {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--brand);
+  animation: spin 1s linear infinite;
+}
+
+.profile-chip-avatar-icon {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-chip-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.profile-chip-title {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.profile-chip-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
 }
 
 .brand-copy {
@@ -223,6 +321,13 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+  .header-profile-chip {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .sidebar-section + .sidebar-section {
@@ -462,7 +567,7 @@ h3 {
 .section-head {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: flex-end;
   gap: 24px;
   margin: 46px 0 24px;
 }

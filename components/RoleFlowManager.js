@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { SkillTreeTimeline } from './SkillTreeTimeline';
+import { TechGenSpinner } from './TechGenSpinner';
 import { useCloudSync } from './Providers';
 
 export function RoleFlowManager({ role }) {
@@ -53,7 +54,13 @@ export function RoleFlowManager({ role }) {
     }
   }
 
-  if (!isLoaded) return <div style={{ minHeight: '500px', display: 'grid', placeItems: 'center', color: 'var(--text-color)' }}>Loading Tracking Data...</div>;
+  if (!isLoaded) {
+    return (
+      <div style={{ minHeight: '500px', display: 'grid', placeItems: 'center' }}>
+        <TechGenSpinner text="Loading Tracking Data..." />
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'relative' }}>

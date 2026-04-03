@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getActivePlan, clearActivePlan } from '@/src/utils/storage';
 import { ActiveDashboard } from '@/components/ActiveDashboard';
+import { TechGenSpinner } from '@/components/TechGenSpinner';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -23,7 +24,11 @@ export default function DashboardPage() {
   }
 
   if (!isLoaded) {
-    return <main className="page-shell"><p>Loading dashboard...</p></main>;
+    return (
+      <main className="page-shell" style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
+        <TechGenSpinner text="Loading Dashboard..." />
+      </main>
+    );
   }
 
   if (!plan) {

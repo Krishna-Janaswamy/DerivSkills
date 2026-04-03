@@ -10,7 +10,7 @@ export function useCloudSync() {
 }
 
 function CloudSyncMaster({ children }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   
   const [learningData, setLearningData] = useState({
     activePlans: {},
@@ -22,7 +22,13 @@ function CloudSyncMaster({ children }) {
 
   // Phase 1: Native Cloud Hydration into Memory
   useEffect(() => {
+    if (status === 'loading') {
+      setIsLoaded(false);
+      return;
+    }
+
     if (status === 'authenticated' && !initialFetchDone.current) {
+      setIsLoaded(false);
       fetch('/api/sync')
         .then(r => r.json())
         .then(res => {
@@ -41,6 +47,12 @@ function CloudSyncMaster({ children }) {
           setIsLoaded(true);
         });
     } else if (status === 'unauthenticated') {
+      initialFetchDone.current = false;
+      setLearningData({
+        activePlans: {},
+        subtopicProgress: {},
+        subtopicTimeTracker: {}
+      });
       setIsLoaded(true);
     }
   }, [status]);

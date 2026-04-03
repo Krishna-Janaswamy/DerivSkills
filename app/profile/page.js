@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { TechGenSpinner } from '@/components/TechGenSpinner';
 
 const EMPTY_DETAILS = {
   headline: '',
@@ -118,9 +119,7 @@ export default function ProfilePage() {
   if (status === 'loading') {
     return (
       <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <div style={{ color: 'var(--text-color)', fontSize: '1.2rem', fontWeight: 600, animation: 'pulse 1.5s infinite' }}>
-          Initializing Secure Database Session...
-        </div>
+        <TechGenSpinner text="Initializing Secure Database Session..." />
       </main>
     );
   }

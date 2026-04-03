@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ActiveDashboard } from '@/components/ActiveDashboard';
+import { TechGenSpinner } from '@/components/TechGenSpinner';
 import { computePlanAnalytics } from '@/src/utils/progress';
 import { useCloudSync } from '@/components/Providers';
 
@@ -84,7 +85,7 @@ export default function MyLearningPage() {
   if (!isLoaded || status === 'loading') {
     return (
       <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <div style={{ color: 'var(--text-color)', fontSize: '1.2rem', fontWeight: 600, animation: 'pulse 1.5s infinite' }}>Hydrating Tracking Data...</div>
+        <TechGenSpinner text="Hydrating Tracking Data..." />
       </main>
     );
   }

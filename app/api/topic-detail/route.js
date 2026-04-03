@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
+import { generateStructuredJson } from '@/lib/ai';
 
 const TOPIC_DETAIL_SCHEMA = {
   type: 'OBJECT',
@@ -22,22 +23,37 @@ const TOPIC_DETAIL_SCHEMA = {
       type: 'STRING',
       description: 'A clear, practical example of the topic in action.',
     },
-    resources: {
-      type: 'ARRAY',
-      items: {
-        type: 'OBJECT',
-        properties: {
-          title: { type: 'STRING' },
-          url: { type: 'STRING' },
-          platform: { type: 'STRING', description: '"YouTube" or "Google"' },
-          description: { type: 'STRING' },
-        },
-        required: ['title', 'url', 'platform', 'description'],
-      },
-      description: 'Exactly 2 YouTube videos and 2 Google Search topics.',
+    illustration: {
+      type: 'STRING',
+      description: 'A short simple code example or practical illustration of how the topic works.',
     },
   },
-  required: ['definition', 'descriptionPoints', 'usagePoints', 'example', 'resources'],
+  required: ['definition', 'descriptionPoints', 'usagePoints', 'example', 'illustration'],
+};
+
+const TOPIC_DETAIL_OPENAI_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    definition: {
+      type: 'string',
+    },
+    descriptionPoints: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    usagePoints: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    example: {
+      type: 'string',
+    },
+    illustration: {
+      type: 'string',
+    },
+  },
+  required: ['definition', 'descriptionPoints', 'usagePoints', 'example', 'illustration'],
 };
 
 export async function POST(request) {
@@ -59,48 +75,25 @@ export async function POST(request) {
          ? JSON.parse(existingCache.payload) 
          : existingCache.payload;
          
-      // Invalidate cache if it's the old schema without descriptionPoints
-      if (detail.descriptionPoints) {
+      // Invalidate cache if it's the old schema without the updated illustration field.
+      if (detail.descriptionPoints && detail.illustration) {
         return NextResponse.json({ detail });
       }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyB1GekwYs5AZJvKRvPr-iF3LYvv6LN39u4';
-
-    const payload = {
-      systemInstruction: {
-        parts: [{ text: 'You are an expert AI tutor. For the provided sub-topic, provide a clear definition. Then provide a "description" in bullet points. Then provide "usage" in bullet points. Then provide a practical real-world example. Finally, provide exactly 4 high-quality reference links (exactly 2 top-trending YouTube channels/videos and exactly 2 highly relevant Google Search recommendations like official docs or top articles). Return JSON only adhering strictly to the schema provided.' }]
+    const detail = await generateStructuredJson({
+      systemPrompt:
+        'You are an expert AI tutor. For the provided sub-topic, provide a clear definition. Then provide a simple description in short bullet points. Then provide practical usage bullet points. Then provide one real-world example in very simple language. Finally, provide one short code example or practical illustration that helps a learner understand the concept quickly. Return JSON only adhering strictly to the schema provided.',
+      userPayload: {
+        role: roleTitle,
+        topicToExplain: topic,
+        expectedOutcomes: context,
       },
-      contents: [{
-        parts: [{
-          text: JSON.stringify({
-            role: roleTitle,
-            topicToExplain: topic,
-            expectedOutcomes: context,
-          })
-        }]
-      }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: TOPIC_DETAIL_SCHEMA,
-        temperature: 0.3
-      }
-    };
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      geminiSchema: TOPIC_DETAIL_SCHEMA,
+      openAiSchema: TOPIC_DETAIL_OPENAI_SCHEMA,
+      schemaName: 'topic_detail',
+      temperature: 0.3,
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json({ error: `Gemini request failed: ${JSON.stringify(data)}` }, { status: response.status });
-    }
-
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const detail = JSON.parse(rawText);
 
     // Overwrite the cache if it existed as the old format, or create it new
     if (existingCache) {

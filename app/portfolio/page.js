@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { TechGenSpinner } from '@/components/TechGenSpinner';
 import { useCloudSync } from '@/components/Providers';
 import { getRoleById } from '@/src/data/roles';
 
@@ -52,7 +53,7 @@ export default function PortfolioPage() {
   if (!isLoaded || status === 'loading') {
     return (
       <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <div style={{ color: 'var(--text-color)', fontSize: '1.2rem', fontWeight: 600, animation: 'pulse 1.5s infinite' }}>Analyzing Cloud Profiles...</div>
+        <TechGenSpinner text="Analyzing Cloud Profiles..." />
       </main>
     );
   }

@@ -95,6 +95,12 @@ DATABASE_URL=your_postgres_connection_string
 
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-5.4-mini
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
+SMTP_FROM="DerivSkills <no-reply@example.com>"
 ```
 
 ### 3. Set up the database
@@ -197,6 +203,22 @@ There are two kinds of profile-related data:
   - `onboardingCompleted`
 
 Learning progress is synced separately through `/api/sync`, and current code preserves `profileDetails` during sync updates.
+
+## Mock Interview Email Delivery
+
+The `Mock Interview` page sends booking requests to `krishna.jms07@gmail.com` directly from the app.
+
+To enable direct sending:
+- configure `SMTP_HOST`
+- configure `SMTP_PORT`
+- configure `SMTP_USER`
+- configure `SMTP_PASS`
+- configure `SMTP_FROM`
+
+Behavior:
+- the app sends the booking email from the server
+- the candidate email is used as `replyTo`
+- signed-in users also keep the request in `learningData.mockInterviewRequests`
 
 ## Available Scripts
 

@@ -33,6 +33,7 @@ function writeLocalOnboarding(data) {
 
 export function WelcomeProfileModal() {
   const { data: session, status, update } = useSession();
+  const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,7 +42,11 @@ export function WelcomeProfileModal() {
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted || status === 'loading') return;
 
     let ignore = false;
 
@@ -140,7 +145,7 @@ export function WelcomeProfileModal() {
     return () => {
       ignore = true;
     };
-  }, [session, status, update]);
+  }, [hasMounted, session, status, update]);
 
   const steps = useMemo(() => {
     const base = [
@@ -288,7 +293,7 @@ export function WelcomeProfileModal() {
     setStepIndex((current) => current - 1);
   }
 
-  if (!isReady || !isOpen) return null;
+  if (!hasMounted || !isReady || !isOpen) return null;
 
   const currentStep = steps[stepIndex];
 

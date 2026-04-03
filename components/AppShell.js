@@ -3,11 +3,25 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { WelcomeProfileModal } from './WelcomeProfileModal';
 
 export function AppShell({ children }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const showAuthenticatedProfile = isMounted && status === 'authenticated' && session?.user;
+  const showLoadingProfile = !isMounted || status === 'loading';
+  const profileStateClassName = showAuthenticatedProfile
+    ? 'is-authenticated'
+    : showLoadingProfile
+      ? 'is-loading'
+      : 'is-guest';
 
   return (
     <div className="app-frame">
@@ -30,36 +44,39 @@ export function AppShell({ children }) {
 
         <Link
           href={`/profile`}
-          style={{ 
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '8px 16px', borderRadius: '18px',
-            background: session ? 'rgba(79, 70, 229, 0.15)' : 'var(--surface-muted)',
-            border: `1px solid ${session ? 'rgba(79, 70, 229, 0.3)' : 'var(--border)'}`,
-            boxShadow: session ? '0 4px 12px rgba(79, 70, 229, 0.15)' : 'none',
-            textDecoration: 'none', transition: 'all 0.2s',
-            height: '100%'
-          }}
+          className={`header-profile-chip ${profileStateClassName}`}
+          aria-busy={showLoadingProfile}
         >
-          {session ? (
+          {showAuthenticatedProfile ? (
             <>
-              <img 
+              <img
+                className="profile-chip-avatar"
                 src={session.user.image || 'https://www.svgrepo.com/show/509001/avatar-thinking-2.svg'} 
                 alt="Avatar" 
-                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand)' }} 
               />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-color)', fontWeight: 600, lineHeight: 1.1 }}>Profile</span>
-                <small style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{session.user.name}</small>
+              <div className="profile-chip-copy">
+                <span className="profile-chip-title">Profile</span>
+                <small className="profile-chip-subtitle">{session.user.name}</small>
+              </div>
+            </>
+          ) : showLoadingProfile ? (
+            <>
+              <div className="profile-chip-avatar profile-chip-avatar-placeholder">
+                <div className="profile-chip-loader" />
+              </div>
+              <div className="profile-chip-copy">
+                <span className="profile-chip-title">Loading</span>
+                <small className="profile-chip-subtitle">Checking session</small>
               </div>
             </>
           ) : (
             <>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: '0.9rem' }}>
-                👤
+              <div className="profile-chip-avatar profile-chip-avatar-placeholder">
+                <span className="profile-chip-avatar-icon">P</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-color)', fontWeight: 600, lineHeight: 1.1 }}>Sign In</span>
-                <small style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Sync progress</small>
+              <div className="profile-chip-copy">
+                <span className="profile-chip-title">Sign In</span>
+                <small className="profile-chip-subtitle">Sync progress</small>
               </div>
             </>
           )}
@@ -105,6 +122,15 @@ export function AppShell({ children }) {
               >
                 <span>My Portfolio</span>
                 <small style={{ marginTop: '4px', fontWeight: 400 }}>Showcase verified skills</small>
+              </Link>
+
+              <Link
+                href={`/mock-interview`}
+                className={`sidebar-role ${pathname === '/mock-interview' ? 'is-current' : ''}`}
+                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
+              >
+                <span>Mock Interview</span>
+                <small style={{ marginTop: '4px', fontWeight: 400 }}>Practice with expert-led interview setup</small>
               </Link>
             </div>
           </div>
