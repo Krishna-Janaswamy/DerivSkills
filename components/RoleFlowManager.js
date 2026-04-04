@@ -7,16 +7,11 @@ import { useCloudSync } from './Providers';
 
 export function RoleFlowManager({ role }) {
   const router = useRouter();
-  const { learningData, triggerSync, isLoaded, status } = useCloudSync();
+  const { learningData, triggerSync, isLoaded } = useCloudSync();
 
   const isActive = isLoaded && learningData.activePlans && !!learningData.activePlans[role.id];
 
   function handleStart() {
-    if (status === 'unauthenticated') {
-      alert("Please Sign In on the top right to start tracking a Skill Track to your Cloud Profile.");
-      return;
-    }
-
     const defaultPlan = {
       roleId: role.id,
       roleTitle: role.title,
