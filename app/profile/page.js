@@ -177,37 +177,6 @@ export default function ProfilePage() {
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="24" height="24" alt="Google" />
                 Continue with Google
               </button>
-
-              <button
-                onClick={() => signIn('github')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '16px',
-                  borderRadius: '14px',
-                  background: 'var(--text-color)',
-                  color: '#ffffff',
-                  border: '1px solid var(--text-color)',
-                  fontSize: '1.05rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, background 0.2s',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.background = '#1e293b';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.background = 'var(--text-color)';
-                }}
-              >
-                <img src="https://www.svgrepo.com/show/512317/github-142.svg" style={{ filter: 'invert(1)' }} width="24" height="24" alt="GitHub" />
-                Continue with GitHub
-              </button>
             </div>
           </>
         ) : (

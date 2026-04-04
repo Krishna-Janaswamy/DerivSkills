@@ -88,9 +88,6 @@ NEXTAUTH_SECRET=replace_with_a_secure_random_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-
 DATABASE_URL=your_postgres_connection_string
 
 OPENAI_API_KEY=your_openai_api_key
@@ -159,33 +156,17 @@ Production callback URL:
 https://derivskills.tech-gens.com/api/auth/callback/google
 ```
 
-### GitHub OAuth
-
-Add a GitHub OAuth app and configure the callback URL:
-
-```text
-http://localhost:3000/api/auth/callback/github
-```
-
-Production callback URL:
-
-```text
-https://derivskills.tech-gens.com/api/auth/callback/github
-```
-
 For deployed environments, update `NEXTAUTH_URL` and the provider callback URLs to match the real domain.
 
 Example:
 
 ```text
-https://your-domain.com/api/auth/callback/github
 https://your-domain.com/api/auth/callback/google
 ```
 
 For this deployment, use:
 
 ```text
-https://derivskills.tech-gens.com/api/auth/callback/github
 https://derivskills.tech-gens.com/api/auth/callback/google
 ```
 

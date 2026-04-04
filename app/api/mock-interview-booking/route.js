@@ -80,6 +80,16 @@ function getMailTransport() {
   });
 }
 
+function getMailSender() {
+  const smtpFrom = process.env.SMTP_FROM;
+
+  if (!smtpFrom) {
+    throw new Error('SMTP sender is not configured.');
+  }
+
+  return smtpFrom;
+}
+
 function getEmailErrorMessage(error) {
   if (!(error instanceof Error)) {
     return 'The booking was saved, but the notification email could not be sent.';
@@ -87,6 +97,10 @@ function getEmailErrorMessage(error) {
 
   if (error.message === 'SMTP configuration is incomplete.') {
     return 'The booking was saved, but SMTP is not configured yet. Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM to enable notification emails.';
+  }
+
+  if (error.message === 'SMTP sender is not configured.') {
+    return 'The booking was saved, but SMTP_FROM is not configured yet. Add SMTP_FROM to enable notification emails.';
   }
 
   const smtpCode = error && typeof error === 'object' ? error.code : undefined;
@@ -157,12 +171,7 @@ export async function POST(request) {
     let warning = '';
 
     try {
-      const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
-
-      if (!smtpFrom) {
-        throw new Error('SMTP configuration is incomplete.');
-      }
-
+      const smtpFrom = getMailSender();
       const transport = getMailTransport();
 
       await transport.sendMail({
