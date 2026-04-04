@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { TechGenSpinner } from '@/components/TechGenSpinner';
 
@@ -141,42 +141,11 @@ export default function ProfilePage() {
         {!session ? (
           <>
             <div style={{ textAlign: 'center', display: 'grid', gap: '1rem', justifyItems: 'center' }}>
-              <div style={{ fontSize: '4.5rem' }}>👋</div>
-              <h1 className="page-title" style={{ margin: 0, fontSize: '3rem', letterSpacing: '-0.03em' }}>Welcome back</h1>
+              <div style={{ fontSize: '4.5rem' }}>🔒</div>
+              <h1 className="page-title" style={{ margin: 0, fontSize: '3rem', letterSpacing: '-0.03em' }}>Profile access is paused</h1>
               <p className="page-subtitle" style={{ fontSize: '1.2rem', maxWidth: '420px', margin: 0, lineHeight: 1.6 }}>
-                Sign in to securely sync your active tracks, custom analytics, and AI-generated plans to the Cloud.
+                Login is temporarily disabled while domain security and OAuth setup are being finalized. You can continue exploring tracks and other product areas without signing in for now.
               </p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '360px', margin: '0 auto' }}>
-              <button
-                onClick={() => signIn('google')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '16px',
-                  borderRadius: '14px',
-                  background: '#ffffff',
-                  color: '#000000',
-                  border: '1px solid var(--border-color)',
-                  fontSize: '1.05rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, boxShadow 0.2s',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none';
-                }}
-              >
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="24" height="24" alt="Google" />
-                Continue with Google
-              </button>
             </div>
           </>
         ) : (
