@@ -2,6 +2,8 @@
 
 DerivSkills is a role-based learning roadmap app built with Next.js, NextAuth, Prisma, and PostgreSQL.
 
+
+
 It helps users:
 - explore curated career tracks
 - generate AI-assisted study plans
