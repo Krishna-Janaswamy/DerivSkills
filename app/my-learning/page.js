@@ -90,20 +90,6 @@ export default function MyLearningPage() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    return (
-      <main className="page-shell" style={{ maxWidth: '800px', margin: '4rem auto', paddingBottom: '4rem' }}>
-        <div style={{ padding: '4rem 2rem', textAlign: 'center', background: 'var(--surface-color)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 50px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1.5rem', opacity: 0.8 }}>🔒</div>
-          <h2 className="page-title" style={{ marginBottom: '1rem', fontSize: '2.5rem' }}>Learning analytics are paused</h2>
-          <p className="page-subtitle" style={{ marginBottom: '2rem', lineHeight: 1.6, fontSize: '1.1rem' }}>
-            Login is temporarily disabled while domain security and authentication setup are being finalized. You can still explore tracks and plan your learning path in the rest of the app.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
   const plansMap = learningData.activePlans || {};
   const rolesArray = Object.values(plansMap);
   const totalHours = Math.floor(globalStats.totalSeconds / 3600);
