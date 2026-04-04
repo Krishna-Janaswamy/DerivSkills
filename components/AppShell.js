@@ -2,26 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
 import { WelcomeProfileModal } from './WelcomeProfileModal';
 
 export function AppShell({ children }) {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const showAuthenticatedProfile = isMounted && status === 'authenticated' && session?.user;
-  const showLoadingProfile = !isMounted || status === 'loading';
-  const profileStateClassName = showAuthenticatedProfile
-    ? 'is-authenticated'
-    : showLoadingProfile
-      ? 'is-loading'
-      : 'is-guest';
 
   return (
     <div className="app-frame">
@@ -39,47 +23,6 @@ export function AppShell({ children }) {
             <strong className="brand-title">DerivSkills</strong>
             <small className="brand-subtitle">BY TECHGEN</small>
           </div>
-        </Link>
-
-
-        <Link
-          href={`/profile`}
-          className={`header-profile-chip ${profileStateClassName}`}
-          aria-busy={showLoadingProfile}
-        >
-          {showAuthenticatedProfile ? (
-            <>
-              <img
-                className="profile-chip-avatar"
-                src={session.user.image || 'https://www.svgrepo.com/show/509001/avatar-thinking-2.svg'} 
-                alt="Avatar" 
-              />
-              <div className="profile-chip-copy">
-                <span className="profile-chip-title">Profile</span>
-                <small className="profile-chip-subtitle">{session.user.name}</small>
-              </div>
-            </>
-          ) : showLoadingProfile ? (
-            <>
-              <div className="profile-chip-avatar profile-chip-avatar-placeholder">
-                <div className="profile-chip-loader" />
-              </div>
-              <div className="profile-chip-copy">
-                <span className="profile-chip-title">Loading</span>
-                <small className="profile-chip-subtitle">Checking session</small>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="profile-chip-avatar profile-chip-avatar-placeholder">
-                <span className="profile-chip-avatar-icon">P</span>
-              </div>
-              <div className="profile-chip-copy">
-                <span className="profile-chip-title">Sign In</span>
-                <small className="profile-chip-subtitle">Sync progress</small>
-              </div>
-            </>
-          )}
         </Link>
       </header>
 
