@@ -103,6 +103,14 @@ SMTP_PASS=your_smtp_password
 SMTP_FROM="DerivSkills <no-reply@example.com>"
 ```
 
+For production, replace `NEXTAUTH_URL` with your deployed domain.
+
+Example:
+
+```env
+NEXTAUTH_URL=https://derivskills.tech-gens.com
+```
+
 ### 3. Set up the database
 
 Generate Prisma client:
@@ -145,12 +153,24 @@ Add a Google OAuth app and configure the callback URL:
 http://localhost:3000/api/auth/callback/google
 ```
 
+Production callback URL:
+
+```text
+https://derivskills.tech-gens.com/api/auth/callback/google
+```
+
 ### GitHub OAuth
 
 Add a GitHub OAuth app and configure the callback URL:
 
 ```text
 http://localhost:3000/api/auth/callback/github
+```
+
+Production callback URL:
+
+```text
+https://derivskills.tech-gens.com/api/auth/callback/github
 ```
 
 For deployed environments, update `NEXTAUTH_URL` and the provider callback URLs to match the real domain.
@@ -160,6 +180,13 @@ Example:
 ```text
 https://your-domain.com/api/auth/callback/github
 https://your-domain.com/api/auth/callback/google
+```
+
+For this deployment, use:
+
+```text
+https://derivskills.tech-gens.com/api/auth/callback/github
+https://derivskills.tech-gens.com/api/auth/callback/google
 ```
 
 ## How The Onboarding Flow Works
