@@ -5,6 +5,9 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '../auth/[...nextauth]/route';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const BOOKING_RECIPIENTS = [
   'izanaminozomi@gmail.com',
   'pavankumarparitala@gmail.com',
