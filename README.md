@@ -268,4 +268,35 @@ npm run start
 - Add a success/error toast system instead of relying only on inline messages
 - Add form validation for onboarding and profile fields
 - Add provider/account management to profile if needed later
-# DerivSkills
+
+## Portfolio Feature Requirements
+
+The Portfolio section is designed to help users showcase their learning journey and skills. Here’s what it aims to provide:
+
+1. **Learning Progress Tracking**
+   - As users progress through their learning journey, every completed topic is automatically recorded and displayed as a verified skill in the Portfolio section.
+
+2. **Portfolio Access After Starting Journey**
+   - Once a user begins their learning journey, they can access the Portfolio section to view and manage their progress and skills.
+
+3. **AI-Powered Portfolio Content & Templates**
+   - The Portfolio will leverage AI to generate high-quality content for users’ portfolios, tailored to their learning achievements and roles.
+   - Four professionally designed portfolio templates are available for users to preview. (Note: AI content generation and export functionality are planned for future updates.)
+
+4. **Vercel-Hosted Portfolio**
+   - The goal is to allow users to publish their portfolio to a unique Vercel-hosted URL after picking a template and previewing their content. (This feature is not yet live; export and hosting are coming soon.)
+
+---
+
+These features are in active development. For the latest status, see the Portfolio section in the app or check future release notes.
+
+## Portfolio Feature Status
+
+| Feature                                      | Status         | Notes                                                      |
+|----------------------------------------------|----------------|------------------------------------------------------------|
+| Learning Progress Tracking                   | ✅ Implemented | Completed topics are tracked and shown as verified skills.  |
+| Portfolio Access After Starting Journey      | ✅ Implemented | Users can access portfolio after starting a journey.        |
+| AI-Powered Portfolio Content & Templates     | 🚧 In Progress | Templates shown; AI content generation being implemented.   |
+| Vercel-Hosted Portfolio Export & Publishing  | 🚧 In Progress | Export and Vercel hosting features are being developed.     |
+
+---

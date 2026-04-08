@@ -118,6 +118,21 @@ function getEmailErrorMessage(error) {
 
 export async function POST(request) {
   try {
+        // Prevent multiple bookings for the same user/email
+        const existingBooking = await prisma.mockInterviewBooking.findFirst({
+          where: {
+            OR: [
+              { email: payload.email },
+              session?.user?.id ? { userId: session.user.id } : undefined,
+            ].filter(Boolean),
+          },
+        });
+        if (existingBooking) {
+          return NextResponse.json(
+            { error: 'You have already submitted a mock interview request.' },
+            { status: 400 }
+          );
+        }
     const body = await request.json();
     const session = await getServerSession(authOptions);
 
@@ -208,13 +223,9 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      bookingId: booking.id,
-      recipient: BOOKING_RECIPIENTS.join(', '),
-      notificationSent,
-      warning,
       message: notificationSent
-        ? `Mock interview request saved and notification sent to ${BOOKING_RECIPIENTS.join(', ')}.`
-        : 'Mock interview request saved successfully.',
+        ? 'Your mock interview request was received and a notification was sent.'
+        : 'Your mock interview request was received.',
     });
   } catch (error) {
     console.error('Mock Interview Booking Error:', error);

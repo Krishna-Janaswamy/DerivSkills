@@ -113,7 +113,7 @@ export async function POST(request) {
     return NextResponse.json({ detail });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to generate topic detail.' },
+      { error: 'Unable to process your request at this time.' },
       { status: 500 }
     );
   }

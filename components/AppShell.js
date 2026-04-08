@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { WelcomeProfileModal } from './WelcomeProfileModal';
+
 
 export function AppShell({ children }) {
   const pathname = usePathname();
 
   return (
     <div className="app-frame">
-      <WelcomeProfileModal />
       <header className="app-header">
         <Link className="brand-mark brand-link" href="/">
           <div className="brand-logo-shell">

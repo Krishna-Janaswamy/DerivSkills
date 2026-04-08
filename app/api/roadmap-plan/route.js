@@ -114,7 +114,7 @@ export async function POST(request) {
     return NextResponse.json({ plan });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to generate AI roadmap plan.' },
+      { error: 'Unable to process your request at this time.' },
       { status: 500 }
     );
   }

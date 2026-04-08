@@ -1,34 +1,32 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useAIPortfolioContent } from './hooks/useAIPortfolioContent';
+import { exportPortfolioToVercel } from './utils/exportPortfolio';
 import Link from 'next/link';
 import { TechGenSpinner } from '@/components/TechGenSpinner';
 import { useCloudSync } from '@/components/Providers';
 import { getRoleById } from '@/src/data/roles';
 
 export default function PortfolioPage() {
+  // All hooks must be called unconditionally at the top
   const { learningData, triggerSync, isLoaded, status } = useCloudSync();
   const [resumeUrl, setResumeUrl] = useState('');
   const [isHovered, setIsHovered] = useState(null);
+  const { aiContent, loading: aiLoading, error: aiError, generateContent } = useAIPortfolioContent();
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   // Extract 'done' subtopics efficiently
   const verifiedSkills = useMemo(() => {
     if (!learningData || !learningData.subtopicProgress) return [];
-    
     const skillsList = [];
-    
-    // Loop through all plans
     Object.keys(learningData.subtopicProgress).forEach((roleId) => {
       const roleProgress = learningData.subtopicProgress[roleId];
       const role = getRoleById(roleId);
-      
-      // Loop through all topics in that plan
       Object.keys(roleProgress).forEach((topicKey) => {
         if (roleProgress[topicKey] === 'done') {
-          // topicKey is usually "Phase Name_Topic Name"
           const parts = topicKey.split('_');
           const topicName = parts.length > 1 ? parts[1] : parts[0];
-          
           skillsList.push({
             name: topicName,
             roleTitle: role ? role.title : 'General'
@@ -36,8 +34,6 @@ export default function PortfolioPage() {
         }
       });
     });
-    
-    // Deduplicate just in case
     const uniqueSkills = [];
     const seen = new Set();
     skillsList.forEach(s => {
@@ -46,7 +42,6 @@ export default function PortfolioPage() {
         uniqueSkills.push(s);
       }
     });
-    
     return uniqueSkills;
   }, [learningData]);
 
@@ -61,8 +56,6 @@ export default function PortfolioPage() {
   const handleResumeSave = (e) => {
     e.preventDefault();
     if (!resumeUrl) return;
-    
-    // Merge resume URL directly into learningData custom properties
     triggerSync({
       ...learningData,
       portfolioMeta: {
@@ -70,7 +63,6 @@ export default function PortfolioPage() {
         resumeLink: resumeUrl
       }
     });
-
     alert("Resume saved to Cloud Profile!");
   };
 
@@ -102,6 +94,12 @@ export default function PortfolioPage() {
       image: '/portfolio/portfolio_academic_grid_1775154542185.png'
     }
   ];
+
+
+  const handleGeneratePortfolio = (templateId) => {
+    setSelectedTemplate(templateId);
+    generateContent(verifiedSkills, templateId);
+  };
 
   return (
     <main className="page-shell" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -217,9 +215,9 @@ export default function PortfolioPage() {
                key={template.id}
                onMouseEnter={() => setIsHovered(template.id)}
                onMouseLeave={() => setIsHovered(null)}
-               style={{ 
-                 background: 'var(--surface-color)', 
-                 borderRadius: '24px', 
+               style={{
+                 background: 'var(--surface-color)',
+                 borderRadius: '24px',
                  overflow: 'hidden',
                  border: `1px solid ${isHovered === template.id ? 'var(--brand)' : 'var(--border-color)'}`,
                  transition: 'all 0.3s ease',
@@ -242,13 +240,41 @@ export default function PortfolioPage() {
                  </p>
                </div>
                <div style={{ padding: '0 2rem 2rem 2rem' }}>
-                  <button style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '12px', fontWeight: 600, cursor: 'not-allowed', color: 'var(--text-secondary)' }}>
-                    Export Coming Soon
+                  <button
+                    style={{ width: '100%', padding: '12px', background: 'var(--brand)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => handleGeneratePortfolio(template.id)}
+                    disabled={aiLoading && selectedTemplate === template.id}
+                  >
+                    {aiLoading && selectedTemplate === template.id ? 'Generating...' : 'Generate Portfolio Content'}
                   </button>
                </div>
              </article>
            ))}
         </div>
+
+        {/* AI Portfolio Content Preview */}
+        {aiContent && (
+          <div style={{ marginTop: '3rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '2rem' }}>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>AI-Generated Portfolio Content</h2>
+            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '12px', fontSize: '1.05rem' }}>{aiContent}</pre>
+            {/* Export and Vercel Deploy Button */}
+            <button
+              style={{ marginTop: '1.5rem', background: 'var(--brand)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}
+              onClick={async () => {
+                if (!aiContent || !selectedTemplate) return;
+                try {
+                  await exportPortfolioToVercel({ content: aiContent, templateId: selectedTemplate });
+                } catch (err) {
+                  alert(err.message || 'Failed to export portfolio');
+                }
+              }}
+              disabled={!aiContent || !selectedTemplate}
+            >
+              Export & Publish to Vercel
+            </button>
+          </div>
+        )}
+        {aiError && <div style={{ color: 'red', marginTop: '1rem' }}>{aiError}</div>}
       </div>
     </main>
   );
