@@ -77,6 +77,10 @@ export const authOptions = {
       return session;
     }
   },
+  session: {
+    maxAge: 30 * 60,
+    updateAge: 10 * 60,
+  },
   secret: requireEnv('NEXTAUTH_SECRET'),
 };
 
