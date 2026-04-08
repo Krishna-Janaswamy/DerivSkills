@@ -26,6 +26,45 @@ export const authOptions = {
       clientSecret: requireEnv('GITHUB_SECRET'),
     }),
   ],
+  callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider !== 'github') {
+        return true;
+      }
+
+      if (!user?.email) {
+        return true;
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        include: { accounts: true },
+      });
+
+      if (existingUser && existingUser.id !== user.id) {
+        const alreadyLinked = existingUser.accounts.some((acct) => acct.provider === 'github');
+        if (!alreadyLinked) {
+          await prisma.account.create({
+            data: {
+              userId: existingUser.id,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              refresh_token: account.refresh_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            },
+          });
+        }
+        user.id = existingUser.id;
+      }
+
+      return true;
+    },
+  },
   pages: {
     signIn: '/profile', 
   },
