@@ -69,11 +69,10 @@ body {
 .app-header {
   position: sticky;
   top: 18px;
-  z-index: 30;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 18px;
+  z-index: 1000;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   width: min(1440px, 100%);
   margin: 0 auto 18px;
   padding: 16px 22px;
@@ -81,6 +80,79 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
+  gap: 1rem;
+  overflow: visible;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-button-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.profile-button-caret {
+  font-size: 0.7rem;
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: grid;
+  min-width: 160px;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  z-index: 1500;
+}
+
+.profile-dropdown-item {
+  padding: 0.65rem 1.25rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-color);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.profile-dropdown-item:hover {
+  background: var(--surface-muted);
 }
 
 .brand-mark {
@@ -197,6 +269,24 @@ body {
   font-weight: 500;
   color: var(--text-secondary);
   font-size: 0.75rem;
+}
+
+.profile-button {
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  text-decoration: none;
+}
+
+.profile-button:hover {
+  border-color: var(--text-secondary);
+  background: var(--surface);
+  color: var(--text-color);
 }
 
 .brand-copy {

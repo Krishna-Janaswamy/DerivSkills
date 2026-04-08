@@ -1,6 +1,8 @@
 // /app/api/node-ai/[nodeId].js
 // Atomic node AI assistance: cache → DB → AI
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route';
 import { getFromCache, setInCache } from '@/lib/cache';
 import { getNodeAIResultFromDB, setNodeAIResultInDB } from '@/lib/db';
 import { callOpenAI } from '@/lib/ai';
@@ -29,6 +31,11 @@ async function fetchLatestNodeAIResult(nodeId) {
 
 export async function GET(request, { params }) {
   const { nodeId } = params;
+
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+  }
 
   const cachedValue = await getFromCache(nodeId);
   if (cachedValue) {

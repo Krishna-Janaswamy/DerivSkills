@@ -1,7 +1,8 @@
 'use client';
 
 import { SessionProvider, useSession } from 'next-auth/react';
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { readLearningCache, writeLearningCache, clearLearningCache } from '@/src/utils/learning-cache';
 
 const CloudSyncContext = createContext();
 
@@ -10,7 +11,7 @@ export function useCloudSync() {
 }
 
 function CloudSyncMaster({ children }) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   
   const [learningData, setLearningData] = useState({
     activePlans: {},
@@ -19,6 +20,7 @@ function CloudSyncMaster({ children }) {
   });
   const [isLoaded, setIsLoaded] = useState(false);
   const initialFetchDone = useRef(false);
+  const userId = session?.user?.id;
 
   // Phase 1: Native Cloud Hydration into Memory
   useEffect(() => {
@@ -27,17 +29,26 @@ function CloudSyncMaster({ children }) {
       return;
     }
 
-    if (status === 'authenticated' && !initialFetchDone.current) {
-      setIsLoaded(false);
+    if (status === 'authenticated') {
+      const cached = userId ? readLearningCache(userId) : null;
+      if (cached) {
+        setLearningData(cached);
+        setIsLoaded(true);
+      }
+      setIsLoaded((prev) => prev || !!cached);
       fetch('/api/sync')
         .then(r => r.json())
         .then(res => {
           if (res.learningData && Object.keys(res.learningData).length > 0) {
-            setLearningData({
-               activePlans: res.learningData.activePlans || {},
-               subtopicProgress: res.learningData.subtopicProgress || {},
-               subtopicTimeTracker: res.learningData.subtopicTimeTracker || {}
-            });
+            const updated = {
+              activePlans: res.learningData.activePlans || {},
+              subtopicProgress: res.learningData.subtopicProgress || {},
+              subtopicTimeTracker: res.learningData.subtopicTimeTracker || {}
+            };
+            setLearningData(updated);
+            if (userId) {
+              writeLearningCache(userId, updated);
+            }
           }
           initialFetchDone.current = true;
           setIsLoaded(true);
@@ -54,8 +65,11 @@ function CloudSyncMaster({ children }) {
         subtopicTimeTracker: {}
       });
       setIsLoaded(true);
+      if (userId) {
+        clearLearningCache(userId);
+      }
     }
-  }, [status]);
+  }, [status, userId]);
 
   // Phase 2: Debounced Memory Sync to Postgres Engine
   const timeoutRef = useRef(null);
@@ -63,6 +77,10 @@ function CloudSyncMaster({ children }) {
   const triggerSync = (newData) => {
     // 1. Update React Memory Instantly for 0.0ms UI Delay
     setLearningData(newData);
+
+    if (userId) {
+      writeLearningCache(userId, newData);
+    }
     
     // 2. Transmit gracefully to Postgres Database avoiding rate-limits
     if (status === 'authenticated') {

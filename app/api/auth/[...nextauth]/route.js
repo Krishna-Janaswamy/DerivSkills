@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
@@ -19,6 +20,10 @@ export const authOptions = {
     GoogleProvider({
       clientId: requireEnv('GOOGLE_CLIENT_ID'),
       clientSecret: requireEnv('GOOGLE_CLIENT_SECRET'),
+    }),
+    GitHubProvider({
+      clientId: requireEnv('GITHUB_ID'),
+      clientSecret: requireEnv('GITHUB_SECRET'),
     }),
   ],
   pages: {
