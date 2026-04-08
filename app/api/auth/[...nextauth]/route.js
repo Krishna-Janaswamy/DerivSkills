@@ -16,6 +16,7 @@ function requireEnv(name) {
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma), 
+  allowDangerousEmailAccountLinking: true,
   providers: [
     GoogleProvider({
       clientId: requireEnv('GOOGLE_CLIENT_ID'),
@@ -26,6 +27,9 @@ export const authOptions = {
       clientSecret: requireEnv('GITHUB_SECRET'),
     }),
   ],
+  pages: {
+    signIn: '/profile', 
+  },
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider !== 'github') {
@@ -64,11 +68,6 @@ export const authOptions = {
 
       return true;
     },
-  },
-  pages: {
-    signIn: '/profile', 
-  },
-  callbacks: {
     async session({ session, user }) {
       if (session.user && user) {
         session.user.id = user.id;
