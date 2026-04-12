@@ -118,21 +118,6 @@ function getEmailErrorMessage(error) {
 
 export async function POST(request) {
   try {
-        // Prevent multiple bookings for the same user/email
-        const existingBooking = await prisma.mockInterviewBooking.findFirst({
-          where: {
-            OR: [
-              { email: payload.email },
-              session?.user?.id ? { userId: session.user.id } : undefined,
-            ].filter(Boolean),
-          },
-        });
-        if (existingBooking) {
-          return NextResponse.json(
-            { error: 'You have already submitted a mock interview request.' },
-            { status: 400 }
-          );
-        }
     const body = await request.json();
     const session = await getServerSession(authOptions);
 
@@ -155,6 +140,21 @@ export async function POST(request) {
     if (!payload.fullName || !payload.email || !payload.targetRole) {
       return NextResponse.json(
         { error: 'Name, email, and target role are required.' },
+        { status: 400 }
+      );
+    }
+
+    // Prevent multiple bookings for the same user/email
+    const orConditions = [{ email: payload.email }];
+    if (session?.user?.id) {
+      orConditions.push({ userId: session.user.id });
+    }
+    const existingBooking = await prisma.mockInterviewBooking.findFirst({
+      where: { OR: orConditions },
+    });
+    if (existingBooking) {
+      return NextResponse.json(
+        { error: 'You have already submitted a mock interview request.' },
         { status: 400 }
       );
     }

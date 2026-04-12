@@ -12,12 +12,16 @@ export function useCloudSync() {
 
 function CloudSyncMaster({ children }) {
   const { data: session, status } = useSession();
-  
-  const [learningData, setLearningData] = useState({
+
+  const emptyLearningData = {
     activePlans: {},
     subtopicProgress: {},
-    subtopicTimeTracker: {}
-  });
+    subtopicTimeTracker: {},
+    portfolioMeta: {},
+    profileDetails: {}
+  };
+  
+  const [learningData, setLearningData] = useState(emptyLearningData);
   const [isLoaded, setIsLoaded] = useState(false);
   const initialFetchDone = useRef(false);
   const userId = session?.user?.id;
@@ -43,7 +47,9 @@ function CloudSyncMaster({ children }) {
             const updated = {
               activePlans: res.learningData.activePlans || {},
               subtopicProgress: res.learningData.subtopicProgress || {},
-              subtopicTimeTracker: res.learningData.subtopicTimeTracker || {}
+              subtopicTimeTracker: res.learningData.subtopicTimeTracker || {},
+              portfolioMeta: res.learningData.portfolioMeta || {},
+              profileDetails: res.learningData.profileDetails || {}
             };
             setLearningData(updated);
             if (userId) {
@@ -59,11 +65,7 @@ function CloudSyncMaster({ children }) {
         });
     } else if (status === 'unauthenticated') {
       initialFetchDone.current = false;
-      setLearningData({
-        activePlans: {},
-        subtopicProgress: {},
-        subtopicTimeTracker: {}
-      });
+      setLearningData(emptyLearningData);
       setIsLoaded(true);
       if (userId) {
         clearLearningCache(userId);

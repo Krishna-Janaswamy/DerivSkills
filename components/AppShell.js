@@ -6,42 +6,73 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { fetchProfileAndCache } from '@/src/utils/profile-cache';
 
+// ── Nav structure (no My Portfolio) ──────────────────────────────────────────
+const NAV = [
+  {
+    label: 'Learn',
+    href: '/tracks',
+    sub: [
+      { label: 'Tracks Catalog',  href: '/tracks',      desc: 'Explore role-based learning paths' },
+      { label: 'My Learnings',    href: '/my-learning',  desc: 'Active tracker & dashboard' },
+      { label: 'Plan Creator',    href: '/ai-planner',   desc: 'Generate your custom plan' },
+    ],
+  },
+  {
+    label: 'Practice',
+    href: '/mock-interview',
+    sub: [
+      { label: 'Mock Interview',  href: '/mock-interview', desc: 'AI-powered interview practice' },
+    ],
+  },
+  {
+    label: 'Resume',
+    href: '/resume',
+    sub: [
+      { label: 'AI Resume Studio', href: '/resume',        desc: 'Analyze · Edit · Score · Download' },
+      { label: 'Resume Vault',     href: '/profile',       desc: 'Saved role-based resumes' },
+    ],
+  },
+];
 
 export function AppShell({ children }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
-  const isAuthenticated = Boolean(session?.user?.id);
+  const isAuthenticated  = Boolean(session?.user?.id);
   const isLoadingSession = status === 'loading';
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [openNav, setOpenNav] = useState(null); // label of currently open dropdown
+  const profileRef = useRef(null);
+  const navRef     = useRef(null);
+
+  // Close dropdowns on outside click
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
+    function onClickOutside(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+      if (navRef.current     && !navRef.current.contains(e.target))     setOpenNav(null);
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  // Prefetch profile on profile dropdown open
   useEffect(() => {
-    if (!isMenuOpen || !session?.user?.id) return;
-    fetchProfileAndCache(session.user.id).catch((err) => {
-      console.warn('Prefetch profile failed', err);
-    });
-  }, [isMenuOpen, session?.user?.id]);
+    if (!profileOpen || !session?.user?.id) return;
+    fetchProfileAndCache(session.user.id).catch(() => {});
+  }, [profileOpen, session?.user?.id]);
+
+  const isActive = (item) => {
+    if (item.href === pathname) return true;
+    return item.sub?.some(s => pathname === s.href || pathname.startsWith(s.href + '/'));
+  };
 
   return (
     <div className="app-frame">
       <header className="app-header">
+        {/* Brand */}
         <Link className="brand-mark brand-link" href="/">
           <div className="brand-logo-shell">
-            <img
-              className="brand-logo-image brand-logo-image-shell"
-              src="/techgen-logo.png"
-              alt="techGen Logo"
-            />
+            <img className="brand-logo-image brand-logo-image-shell" src="/techgen-logo.png" alt="TechGen Logo" />
           </div>
           <div className="brand-copy">
             <strong className="brand-title">DerivSkills</strong>
@@ -49,12 +80,50 @@ export function AppShell({ children }) {
           </div>
         </Link>
 
+        {/* ── Center Nav ─────────────────────────────────────────────────── */}
+        <nav className="header-center-nav" ref={navRef}>
+          {NAV.map((item) => {
+            const active = isActive(item);
+            const isOpen = openNav === item.label;
+            return (
+              <div key={item.label} className="nav-item-wrap">
+                <button
+                  className={`nav-pill ${active ? 'nav-pill-active' : ''}`}
+                  onClick={() => setOpenNav(isOpen ? null : item.label)}
+                  aria-expanded={isOpen}
+                >
+                  {item.label}
+                  {item.sub?.length > 1 && <span className="nav-caret">{isOpen ? '▴' : '▾'}</span>}
+                </button>
+
+                {/* Dropdown */}
+                {isOpen && item.sub?.length > 0 && (
+                  <div className="nav-dropdown">
+                    {item.sub.map((s) => (
+                      <Link
+                        key={s.href}
+                        href={s.href}
+                        className={`nav-dropdown-item ${pathname === s.href || pathname.startsWith(s.href + '/') ? 'nav-dropdown-item-active' : ''}`}
+                        onClick={() => setOpenNav(null)}
+                      >
+                        <span className="nav-dropdown-label">{s.label}</span>
+                        <span className="nav-dropdown-desc">{s.desc}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* ── Profile ────────────────────────────────────────────────────── */}
         <div className="header-right">
-          <div className="profile-dropdown" ref={menuRef}>
+          <div className="profile-dropdown" ref={profileRef}>
             <button
               className="profile-button"
-              onClick={() => setIsMenuOpen((prev) => !prev)}
-              aria-expanded={isMenuOpen}
+              onClick={() => setProfileOpen((p) => !p)}
+              aria-expanded={profileOpen}
             >
               {isLoadingSession ? (
                 'Loading...'
@@ -63,26 +132,23 @@ export function AppShell({ children }) {
                   <img
                     className="profile-button-avatar"
                     src={session?.user?.image || '/techgen-logo.png'}
-                    alt="Profile avatar"
+                    alt="Avatar"
                   />
                   <span>{session?.user?.name || 'Profile'}</span>
                   <span className="profile-button-caret">▾</span>
                 </>
               )}
             </button>
-            {isMenuOpen && (
+            {profileOpen && (
               <div className="profile-dropdown-menu">
                 {isAuthenticated ? (
                   <>
-                    <Link href="/profile" className="profile-dropdown-item">
+                    <Link href="/profile" className="profile-dropdown-item" onClick={() => setProfileOpen(false)}>
                       Edit profile
                     </Link>
                     <button
                       className="profile-dropdown-item"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        signOut({ callbackUrl: '/' });
-                      }}
+                      onClick={() => { setProfileOpen(false); signOut({ callbackUrl: '/' }); }}
                     >
                       Sign out
                     </button>
@@ -90,10 +156,7 @@ export function AppShell({ children }) {
                 ) : (
                   <button
                     className="profile-dropdown-item"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      signIn(undefined, { callbackUrl: '/profile' });
-                    }}
+                    onClick={() => { setProfileOpen(false); signIn(undefined, { callbackUrl: '/profile' }); }}
                   >
                     Sign in
                   </button>
@@ -104,60 +167,8 @@ export function AppShell({ children }) {
         </div>
       </header>
 
-      <div className="app-body">
-        <aside className="app-sidebar">
-          <div className="sidebar-section">
-            <p className="sidebar-label" style={{ marginBottom: '1.2rem' }}>Navigation</p>
-            <div className="sidebar-role-list">
-              <Link
-                href={`/ai-planner`}
-                className={`sidebar-role ${pathname === '/ai-planner' ? 'is-current' : ''}`}
-                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
-              >
-                <span>Plan Creator</span>
-                <small style={{ marginTop: '4px', fontWeight: 400 }}>Generate your custom plan</small>
-              </Link>
-
-              <Link
-                href={`/tracks`}
-                className={`sidebar-role ${pathname.startsWith('/tracks') ? 'is-current' : ''}`}
-                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
-              >
-                <span>Tracks Catalog</span>
-                <small style={{ marginTop: '4px', fontWeight: 400 }}>Explore the role structure</small>
-              </Link>
-
-              <Link
-                href={`/my-learning`}
-                className={`sidebar-role ${pathname === '/my-learning' ? 'is-current' : ''}`}
-                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
-              >
-                <span>My Learnings</span>
-                <small style={{ marginTop: '4px', fontWeight: 400 }}>Active tracker & dashboard</small>
-              </Link>
-
-              <Link
-                href={`/portfolio`}
-                className={`sidebar-role ${pathname === '/portfolio' ? 'is-current' : ''}`}
-                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
-              >
-                <span>My Portfolio</span>
-                <small style={{ marginTop: '4px', fontWeight: 400 }}>Showcase verified skills</small>
-              </Link>
-
-              <Link
-                href={`/mock-interview`}
-                className={`sidebar-role ${pathname === '/mock-interview' ? 'is-current' : ''}`}
-                style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 600 }}
-              >
-                <span>Mock Interview</span>
-                <small style={{ marginTop: '4px', fontWeight: 400 }}>Practice with expert-led interview setup</small>
-              </Link>
-            </div>
-          </div>
-
-        </aside>
-
+      {/* No sidebar — full width body */}
+      <div className="app-body no-sidebar">
         <div className="app-main">{children}</div>
       </div>
     </div>

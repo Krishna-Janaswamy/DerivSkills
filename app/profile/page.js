@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
 import { TechGenSpinner } from '@/components/TechGenSpinner';
 import { fetchProfileAndCache, readProfileCache } from '@/src/utils/profile-cache';
+import { ResumeVault } from '@/components/ResumeVault';
 
 const EMPTY_DETAILS = {
   headline: '',
@@ -528,6 +529,10 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+
+          {/* ── Resume Vault ─────────────────────────────────────────── */}
+          <ResumeVault />
+
         </div>
       )}
     </main>
