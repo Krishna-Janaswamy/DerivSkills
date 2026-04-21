@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse }  from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import nodemailer from 'nodemailer';
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
-import { authOptions } from '../auth/[...nextauth]/route';
+import nodemailer          from 'nodemailer';
+import { Prisma }          from '@prisma/client';
+import { prisma }          from '@/lib/prisma';
+import { authOptions }     from '../auth/[...nextauth]/route';
+import { rateLimit }       from '@/lib/api-security';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -120,6 +121,13 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const session = await getServerSession(authOptions);
+
+    // Rate limit: 3 booking attempts per 10 min per user or IP
+    const identifier = session?.user?.id
+      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || 'anon';
+    const rlResult = await rateLimit(identifier, { limit: 3, window: 600, prefix: 'rl:booking:' });
+    if (rlResult) return rlResult;
 
     const payload = {
       fullName: normalizeText(body.fullName),

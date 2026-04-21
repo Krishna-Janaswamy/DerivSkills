@@ -1,4 +1,6 @@
-import { generateStructuredJson } from "@/lib/ai";
+import { generateStructuredJson } from '@/lib/ai';
+import { errorResponse }          from '@/lib/api-security';
+
 
 export async function POST(req) {
   try {
@@ -95,7 +97,6 @@ Scoring guide: unreadable = 5, very poor = 10-25, poor = 25-45, average = 45-65,
 
     return Response.json(analysis);
   } catch (err) {
-    console.error("Resume Analysis Error:", err);
-    return Response.json({ error: err.message || "Failed to analyze resume." }, { status: 500 });
+    return errorResponse(err, '[analyze-resume]');
   }
 }

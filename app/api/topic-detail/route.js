@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
-import { prisma } from "@/lib/prisma";
+import { NextResponse }  from 'next/server';
+import { prisma }         from '@/lib/prisma';
 import { generateStructuredJson } from '@/lib/ai';
+import { withSecurity, errorResponse } from '@/lib/api-security';
+
 
 const TOPIC_DETAIL_SCHEMA = {
   type: 'OBJECT',
@@ -57,25 +59,26 @@ const TOPIC_DETAIL_OPENAI_SCHEMA = {
 };
 
 export async function POST(request) {
+  const guard = await withSecurity(request, {
+    auth:      true,
+    rateLimit: { limit: 10, window: 60, prefix: 'rl:topic:' },
+    schema: {
+      topic:     { type: 'string', required: true, minLength: 1, maxLength: 200 },
+      roleTitle: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+      context:   { type: 'string', required: false, maxLength: 500 },
+    },
+  });
+  if (!guard.ok) return guard.response;
+  const { topic, context, roleTitle } = guard.body;
+
   try {
-    const { topic, context, roleTitle } = await request.json();
-
-    if (!topic || !roleTitle) {
-       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
-    }
-
     const topicHash = `${roleTitle.toLowerCase().trim()}_${topic.toLowerCase().trim()}`;
 
-    const existingCache = await prisma.topicExplanationCache.findUnique({
-      where: { topicHash }
-    });
-
+    const existingCache = await prisma.topicExplanationCache.findUnique({ where: { topicHash } });
     if (existingCache) {
-      const detail = typeof existingCache.payload === 'string' 
-         ? JSON.parse(existingCache.payload) 
-         : existingCache.payload;
-         
-      // Invalidate cache if it's the old schema without the updated illustration field.
+      const detail = typeof existingCache.payload === 'string'
+        ? JSON.parse(existingCache.payload)
+        : existingCache.payload;
       if (detail.descriptionPoints && detail.illustration) {
         return NextResponse.json({ detail });
       }
@@ -84,37 +87,24 @@ export async function POST(request) {
     const detail = await generateStructuredJson({
       systemPrompt:
         'You are an expert AI tutor. For the provided sub-topic, provide a clear definition. Then provide a simple description in short bullet points. Then provide practical usage bullet points. Then provide one real-world example in very simple language. Finally, provide one short code example or practical illustration that helps a learner understand the concept quickly. Return JSON only adhering strictly to the schema provided.',
-      userPayload: {
-        role: roleTitle,
-        topicToExplain: topic,
-        expectedOutcomes: context,
-      },
+      userPayload: { role: roleTitle, topicToExplain: topic, expectedOutcomes: context },
       geminiSchema: TOPIC_DETAIL_SCHEMA,
       openAiSchema: TOPIC_DETAIL_OPENAI_SCHEMA,
       schemaName: 'topic_detail',
       temperature: 0.3,
     });
 
-    // Overwrite the cache if it existed as the old format, or create it new
     if (existingCache) {
-      prisma.topicExplanationCache.update({
-        where: { topicHash },
-        data: { payload: detail }
-      }).catch(err => console.error("Cache Update Error:", err));
+      prisma.topicExplanationCache.update({ where: { topicHash }, data: { payload: detail } })
+        .catch(err => console.error('Cache Update Error:', err));
     } else {
-      prisma.topicExplanationCache.create({
-        data: {
-          topicHash,
-          payload: detail
-        }
-      }).catch(err => console.error("Cache Write Error:", err));
+      prisma.topicExplanationCache.create({ data: { topicHash, payload: detail } })
+        .catch(err => console.error('Cache Write Error:', err));
     }
 
     return NextResponse.json({ detail });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Unable to process your request at this time.' },
-      { status: 500 }
-    );
+    return errorResponse(error, '[topic-detail]');
   }
 }
+

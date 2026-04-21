@@ -1,20 +1,22 @@
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
-import { NextResponse } from "next/server";
-import { getFromCache, setInCache } from "@/lib/cache";
+import { prisma }        from '@/lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions }   from '../auth/[...nextauth]/route';
+import { NextResponse }  from 'next/server';
+import { getFromCache, setInCache } from '@/lib/cache';
+import { requireAuth, rateLimit, withSecurity, sanitizeOutput } from '@/lib/api-security';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  const { session } = authResult;
+
+  const rlResult = await rateLimit(session.user.id, { limit: 20, window: 60, prefix: 'rl:profile:get:' });
+  if (rlResult) return rlResult;
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
-    }
-
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -100,16 +102,20 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+  const guard = await withSecurity(request, {
+    auth:      true,
+    rateLimit: { limit: 10, window: 60, prefix: 'rl:profile:put:' },
+    schema: {
+      name:           { type: 'string', required: false, maxLength: 120 },
+      presentRole:    { type: 'string', required: false, maxLength: 120 },
+      profileDetails: { type: 'object', required: false },
+    },
+  });
+  if (!guard.ok) return guard.response;
+  const { session, body } = guard;
+  const { name, presentRole, profileDetails } = body;
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { name, presentRole, profileDetails } = body;
-
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {

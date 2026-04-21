@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
-import zlib from "zlib";
-import { promisify } from "util";
+import { NextResponse } from 'next/server';
+import { errorResponse } from '@/lib/api-security';
+import zlib from 'zlib';
+import { promisify } from 'util';
 
 const inflate = promisify(zlib.inflate);
 const inflateRaw = promisify(zlib.inflateRaw);
@@ -49,11 +50,7 @@ export async function POST(req) {
 
     return NextResponse.json({ text, charCount: text.length });
   } catch (err) {
-    console.error("[extract-resume-text] Error:", err);
-    return NextResponse.json(
-      { error: `Failed to process file: ${err.message}` },
-      { status: 500 }
-    );
+    return errorResponse(err, '[extract-resume-text]');
   }
 }
 

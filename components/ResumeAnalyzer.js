@@ -898,7 +898,7 @@ export function ResumeAnalyzer() {
                                 onClick={() => applyFix(currentStepId, suggestion)}
                                 style={{flex:1,padding:'0.5rem',borderRadius:'8px',border:'none',background:appliedFlash?'#10b981':'var(--brand)',color:'white',fontWeight:700,cursor:'pointer',fontSize:'0.83rem',transition:'background 0.3s'}}
                               >
-                                {appliedFlash ? '✓ Applied!' : (content[currentStepId] && (typeof content[currentStepId] === 'string' ? content[currentStepId].trim().length > 0 : true)) ? '↩ Replace with this' : '✅ Use This'}
+                                {appliedFlash ? '✓ Applied!' : (Boolean(content[currentStepId]) && (typeof content[currentStepId] === 'string' ? content[currentStepId].trim().length > 0 : true)) ? '↩ Replace with this' : '✅ Use This'}
                               </button>
                               <button
                                 onClick={() => {

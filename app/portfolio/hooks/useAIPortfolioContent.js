@@ -5,7 +5,7 @@ async function parseApiResponse(response, fallbackMessage) {
   const raw = await response.text();
 
   if (!raw) {
-    if (!response.ok) {
+          if (!response.ok) {
       throw new Error(fallbackMessage);
     }
     return null;

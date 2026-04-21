@@ -1,4 +1,6 @@
-import { generateStructuredJson } from "@/lib/ai";
+import { generateStructuredJson } from '@/lib/ai';
+import { errorResponse }          from '@/lib/api-security';
+
 
 export async function POST(req) {
   try {
@@ -116,7 +118,6 @@ Format for 'improved': ${formatMap[section] || "Improved plain text."}`;
     return Response.json({ section, improved, changes, whyItHelps: result.whyItHelps || '' });
 
   } catch (err) {
-    console.error("[suggest-fix] Error:", err);
-    return Response.json({ error: err.message || "Failed to generate suggestion." }, { status: 500 });
+    return errorResponse(err, '[suggest-fix]');
   }
 }

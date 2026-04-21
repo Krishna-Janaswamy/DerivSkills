@@ -1,5 +1,6 @@
 import { generateStructuredJson } from '@/lib/ai';
-import { NextResponse } from 'next/server';
+import { NextResponse }          from 'next/server';
+import { safeError }             from '@/lib/api-security';
 
 const resumeSchema = {
   type: 'object',
@@ -139,23 +140,6 @@ function buildSkillEvidence(skills) {
   }));
 }
 
-function toClientErrorMessage(error) {
-  const message = error instanceof Error ? error.message : 'Failed to generate resume content.';
-
-  if (message.includes('Missing AI configuration')) {
-    return 'AI setup is missing. Add GEMINI_API_KEY, OPENAI_API_KEY, or GROQ_API_KEY in your environment and restart the server.';
-  }
-
-  if (message.includes('Missing GEMINI_API_KEY') || message.includes('Missing OPENAI_API_KEY') || message.includes('Missing GROQ_API_KEY')) {
-    return 'An AI provider key is missing. Check your environment variables and restart the server.';
-  }
-
-  if (message.includes('request failed')) {
-    return `The AI provider request failed. ${message}`;
-  }
-
-  return message;
-}
 
 function buildSummary({ userProfile, targetRole, proofMetrics, relevantContext }) {
   const role = normalizeText(targetRole) || normalizeText(userProfile?.presentRole) || 'Software Engineer';
@@ -341,7 +325,7 @@ Rules:
 
     return NextResponse.json({
       content: fallbackContent,
-      error: toClientErrorMessage(error),
+      error: safeError(error, '[portfolio/generate]'),
     });
   }
 }

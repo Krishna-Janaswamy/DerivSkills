@@ -11,36 +11,26 @@ const DEFAULT_FORM = {
   targetRole: '',
   interviewType: 'technical',
   seniority: 'early-career',
-  preferredTimeline: 'this-week',
   notes: '',
 };
 
-const INTERVIEW_TYPE_LABELS = {
-  technical: 'Technical depth check',
-  behavioral: 'Behavioral round',
-  system_design: 'System design round',
-  mixed: 'Mixed interview loop',
+const inp = {
+  width: '100%', padding: '10px 13px', borderRadius: '8px',
+  border: '1px solid var(--border-color)', background: 'var(--surface-muted)',
+  color: 'var(--text-color)', fontSize: '0.93rem', fontFamily: 'inherit',
+  boxSizing: 'border-box', outline: 'none',
 };
 
-const SENIORITY_LABELS = {
-  student: 'Student / intern',
-  'early-career': '0-3 years',
-  mid: '3-7 years',
-  senior: 'Senior / lead',
-};
-
-const TIMELINE_LABELS = {
-  'next-24-hours': 'Within 24 hours',
-  'this-week': 'This week',
-  'next-week': 'Next week',
-  flexible: 'Flexible',
-};
-
-const SIMPLE_STEPS = [
-  'Add your target role and your current background.',
-  'Choose the type of mock interview you want.',
-  'Send the request so it is saved and the scheduler gets notified.',
-];
+function Field({ label, required, children }) {
+  return (
+    <div style={{ display: 'grid', gap: '5px' }}>
+      <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-color)' }}>
+        {label}{required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
 
 export default function MockInterviewPage() {
   const { data: session } = useSession();
@@ -49,303 +39,183 @@ export default function MockInterviewPage() {
   const [submitError, setSubmitError] = useState('');
   const [bookingResult, setBookingResult] = useState(null);
 
-  function resetFeedback() {
-    setSubmitError('');
-    setBookingResult(null);
-  }
+  function resetFeedback() { setSubmitError(''); setBookingResult(null); }
+  function set(field, value) { resetFeedback(); setForm(f => ({ ...f, [field]: value })); }
 
   useEffect(() => {
     if (!session?.user) return;
-
     let ignore = false;
-
-    async function hydrateProfile() {
+    async function hydrate() {
       try {
-        const response = await fetch('/api/profile');
-        const data = await response.json();
-
-        if (!response.ok || ignore) {
-          return;
-        }
-
-        const profileDetails = data.profileDetails || {};
-        const currentRole =
-          data.user?.presentRole ||
-          (profileDetails.userType === 'student' ? 'Student' : '') ||
-          '';
-        const organization = profileDetails.company || profileDetails.collegeName || '';
-
-        setForm((current) => ({
-          ...current,
-          fullName: current.fullName || data.user?.name || session.user.name || '',
-          email: current.email || data.user?.email || session.user.email || '',
-          currentRole: current.currentRole || currentRole,
-          organization: current.organization || organization,
+        const res  = await fetch('/api/profile');
+        const data = await res.json();
+        if (!res.ok || ignore) return;
+        const pd  = data.profileDetails || {};
+        const role = data.user?.presentRole || (pd.userType === 'student' ? 'Student' : '') || '';
+        const org  = pd.company || pd.collegeName || '';
+        setForm(f => ({
+          ...f,
+          fullName:     f.fullName     || data.user?.name  || session.user.name  || '',
+          email:        f.email        || data.user?.email || session.user.email || '',
+          currentRole:  f.currentRole  || role,
+          organization: f.organization || org,
         }));
       } catch {
-        if (!ignore) {
-          setForm((current) => ({
-            ...current,
-            fullName: current.fullName || session.user.name || '',
-            email: current.email || session.user.email || '',
-          }));
-        }
+        if (!ignore) setForm(f => ({
+          ...f,
+          fullName: f.fullName || session.user.name  || '',
+          email:    f.email    || session.user.email || '',
+        }));
       }
     }
-
-    hydrateProfile();
-
-    return () => {
-      ignore = true;
-    };
+    hydrate();
+    return () => { ignore = true; };
   }, [session]);
 
   const requestPreview = useMemo(() => {
-    const candidateName = form.fullName.trim() || 'The candidate';
-    const currentRole = form.currentRole.trim() || 'current background not provided';
-    const organization = form.organization.trim() || 'organization not provided';
-    const role = form.targetRole.trim() || 'target role not provided';
-    const type = INTERVIEW_TYPE_LABELS[form.interviewType];
-    const level = SENIORITY_LABELS[form.seniority];
-    const timeline = TIMELINE_LABELS[form.preferredTimeline];
-
-    return `${candidateName} is requesting a ${type.toLowerCase()} for ${role}. The session should match ${level.toLowerCase()} expectations and be planned ${timeline.toLowerCase()}. Current background: ${currentRole} at ${organization}. ${form.notes.trim() ? `Additional context: ${form.notes.trim()}` : 'The candidate wants focused feedback and realistic interview practice.'}`;
+    const name = form.fullName.trim() || 'The candidate';
+    const role = form.targetRole.trim() || 'not provided';
+    const bg   = form.currentRole.trim() || 'not provided';
+    const org  = form.organization.trim() || 'not provided';
+    return `${name} — ${form.interviewType} interview for ${role}. Level: ${form.seniority}. Background: ${bg} at ${org}.${form.notes.trim() ? ` Notes: ${form.notes.trim()}` : ''}`;
   }, [form]);
 
-  function updateField(field, value) {
+  async function handleSubmit(e) {
+    e.preventDefault();
     resetFeedback();
-    setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    resetFeedback();
-
     if (!form.fullName.trim() || !form.email.trim() || !form.targetRole.trim()) {
-      setSubmitError('Please add your name, email, and target role before sending the request.');
+      setSubmitError('Please fill in your name, email, and target role.');
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      const response = await fetch('/api/mock-interview-booking', {
+      const res  = await fetch('/api/mock-interview-booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          interviewTypeLabel: INTERVIEW_TYPE_LABELS[form.interviewType],
-          seniorityLabel: SENIORITY_LABELS[form.seniority],
-          preferredTimelineLabel: TIMELINE_LABELS[form.preferredTimeline],
-          requestPreview,
-        }),
+        body: JSON.stringify({ ...form, requestPreview }),
       });
-      const contentType = response.headers.get('content-type') || '';
-      const data = contentType.includes('application/json')
-        ? await response.json()
-        : { error: 'Unexpected server response. Please try again.' };
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Could not prepare the booking request.');
-      }
-
+      const ct   = res.headers.get('content-type') || '';
+      const data = ct.includes('application/json') ? await res.json() : { error: 'Unexpected response.' };
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
       setBookingResult(data);
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Could not send the booking request.');
+    } catch (err) {
+      const isFetch = !err?.message || ['fetch','network','Failed to fetch'].some(k => err.message.includes(k));
+      setSubmitError(isFetch ? 'Could not reach the server. Please check your connection.' : err.message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <main className="page-shell" style={{ maxWidth: '980px' }}>
-      <section
+    <main className="page-shell" style={{ maxWidth: 700, margin: '0 auto' }}>
+
+      {/* Page title */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ margin: '0 0 0.3rem', fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-color)' }}>
+          Book a Mock Interview
+        </h1>
+        <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+          Fill in the form below and our team will get back to you to confirm a time.
+          {' '}<span style={{ color: '#ef4444' }}>*</span> fields are required.
+        </p>
+      </div>
+
+      {/* Form card */}
+      <form
+        onSubmit={handleSubmit}
         style={{
-          background: 'var(--surface-color)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '24px',
-          padding: '32px',
-          boxShadow: 'var(--shadow)',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          padding: '2rem',
+          boxShadow: 'var(--shadow-soft)',
           display: 'grid',
-          gap: '24px',
+          gap: '1.25rem',
         }}
       >
-        <div style={{ display: 'grid', gap: '12px' }}>
-          <p className="section-kicker" style={{ margin: 0, width: 'fit-content' }}>Mock Interview</p>
-          <h1 className="page-title" style={{ margin: 0, maxWidth: '18ch' }}>
-            Book a clean, role-based mock interview.
-          </h1>
-          <p className="page-subtitle" style={{ margin: 0, maxWidth: '62ch', lineHeight: 1.7 }}>
-            Share your target role and interview details. We will save the booking request in the app and notify the scheduler at <strong>krishna.jms07@gmail.com</strong>.
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '14px',
-          }}
-        >
-          {SIMPLE_STEPS.map((step, index) => (
-            <div
-              key={step}
-              style={{
-                background: 'var(--surface-strong)',
-                border: '1px solid var(--border)',
-                borderRadius: '18px',
-                padding: '18px',
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  width: '28px',
-                  height: '28px',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '999px',
-                  background: 'rgba(37, 99, 235, 0.12)',
-                  color: 'var(--brand)',
-                  fontWeight: 700,
-                  marginBottom: '12px',
-                }}
-              >
-                {index + 1}
-              </span>
-              <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.65 }}>{step}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section
-        style={{
-          marginTop: '24px',
-          display: 'grid',
-          gap: '20px',
-        }}
-      >
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            background: 'var(--surface-color)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '24px',
-            padding: '28px',
-            boxShadow: 'var(--shadow)',
-            display: 'grid',
-            gap: '16px',
-          }}
-        >
-          <div style={{ display: 'grid', gap: '6px' }}>
-            <h2 className="page-title" style={{ margin: 0, fontSize: '1.7rem' }}>Interview Request</h2>
-            <p className="page-subtitle" style={{ margin: 0, lineHeight: 1.6 }}>
-              Keep it simple. Fill the key details and send the request.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-            <Field label="Full name">
-              <input value={form.fullName} onChange={(event) => updateField('fullName', event.target.value)} placeholder="Krishna Janaswamy" style={inputStyle} />
-            </Field>
-            <Field label="Email address">
-              <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} placeholder="name@example.com" style={inputStyle} />
-            </Field>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-            <Field label="Current role or status">
-              <input value={form.currentRole} onChange={(event) => updateField('currentRole', event.target.value)} placeholder="Student or Software Engineer" style={inputStyle} />
-            </Field>
-            <Field label="Company or college">
-              <input value={form.organization} onChange={(event) => updateField('organization', event.target.value)} placeholder="Redis or IIT Madras" style={inputStyle} />
-            </Field>
-          </div>
-
-          <Field label="Target role">
-            <input value={form.targetRole} onChange={(event) => updateField('targetRole', event.target.value)} placeholder="Backend Engineer" style={inputStyle} />
+        {/* Name + Email */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <Field label="Full Name" required>
+            <input type="text" value={form.fullName} onChange={e => set('fullName', e.target.value)} style={inp} />
           </Field>
+          <Field label="Email Address" required>
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} style={inp} />
+          </Field>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-            <Field label="Interview type">
-              <select value={form.interviewType} onChange={(event) => updateField('interviewType', event.target.value)} style={inputStyle}>
-                <option value="technical">Technical depth check</option>
-                <option value="behavioral">Behavioral round</option>
-                <option value="system_design">System design round</option>
-                <option value="mixed">Mixed interview loop</option>
-              </select>
-            </Field>
-            <Field label="Seniority">
-              <select value={form.seniority} onChange={(event) => updateField('seniority', event.target.value)} style={inputStyle}>
-                <option value="student">Student / intern</option>
-                <option value="early-career">0-3 years</option>
-                <option value="mid">3-7 years</option>
-                <option value="senior">Senior / lead</option>
-              </select>
-            </Field>
-          </div>
+        {/* Current Role + Org */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <Field label="Current Role">
+            <input type="text" value={form.currentRole} onChange={e => set('currentRole', e.target.value)} style={inp} />
+          </Field>
+          <Field label="Company / College">
+            <input type="text" value={form.organization} onChange={e => set('organization', e.target.value)} style={inp} />
+          </Field>
+        </div>
 
-          <Field label="Preferred timeline">
-            <select value={form.preferredTimeline} onChange={(event) => updateField('preferredTimeline', event.target.value)} style={inputStyle}>
-              <option value="next-24-hours">Within 24 hours</option>
-              <option value="this-week">This week</option>
-              <option value="next-week">Next week</option>
-              <option value="flexible">Flexible</option>
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.25rem 0' }} />
+
+        {/* Target role */}
+        <Field label="Target Role" required>
+          <input type="text" value={form.targetRole} onChange={e => set('targetRole', e.target.value)} style={inp} />
+        </Field>
+
+        {/* Interview type + Seniority */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <Field label="Interview Type">
+            <select value={form.interviewType} onChange={e => set('interviewType', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="technical">Technical</option>
+              <option value="behavioral">Behavioural</option>
+              <option value="system_design">System Design</option>
+              <option value="mixed">Mixed</option>
             </select>
           </Field>
-
-          <Field label="Additional notes">
-            <textarea
-              value={form.notes}
-              onChange={(event) => updateField('notes', event.target.value)}
-              rows={4}
-              placeholder="Mention any focus areas or interview concerns."
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-            />
+          <Field label="Seniority">
+            <select value={form.seniority} onChange={e => set('seniority', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="student">Student / Intern</option>
+              <option value="early-career">0–3 years</option>
+              <option value="mid">3–7 years</option>
+              <option value="senior">Senior / Lead</option>
+            </select>
           </Field>
+        </div>
 
-          <button type="submit" className="role-link" style={{ width: '100%' }}>
-            {isSubmitting ? 'Preparing Booking Request...' : 'Send Booking Request'}
-          </button>
+        {/* Notes */}
+        <Field label="Additional Notes">
+          <textarea
+            value={form.notes}
+            onChange={e => set('notes', e.target.value)}
+            rows={4}
+            style={{ ...inp, resize: 'vertical', lineHeight: 1.65 }}
+          />
+        </Field>
 
-          {bookingResult?.warning && (
-            <p style={{ margin: 0, color: '#92400e', fontWeight: 600, lineHeight: 1.7 }}>
-              {bookingResult.warning}
-            </p>
-          )}
+        {/* Feedback */}
+        {submitError && (
+          <p style={{ margin: 0, fontSize: '0.86rem', color: '#b91c1c', fontWeight: 500 }}>⚠️ {submitError}</p>
+        )}
+        {bookingResult?.warning && (
+          <p style={{ margin: 0, fontSize: '0.86rem', color: '#92400e', fontWeight: 500 }}>{bookingResult.warning}</p>
+        )}
+        {bookingResult && !bookingResult.warning && (
+          <p style={{ margin: 0, fontSize: '0.86rem', color: '#166534', fontWeight: 600 }}>✓ {bookingResult.message}</p>
+        )}
 
-          {bookingResult && !bookingResult.warning && (
-            <p style={{ margin: 0, color: '#166534', fontWeight: 600, lineHeight: 1.7 }}>
-              {bookingResult.message}
-            </p>
-          )}
-
-          {submitError && (
-            <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>
-              {submitError}
-            </p>
-          )}
-        </form>
-      </section>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          style={{
+            padding: '0.85rem', borderRadius: '10px', border: 'none',
+            background: 'var(--brand)', color: '#fff',
+            fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
+            cursor: isSubmitting ? 'wait' : 'pointer',
+            opacity: isSubmitting ? 0.75 : 1,
+          }}
+        >
+          {isSubmitting ? 'Sending…' : 'Send Request'}
+        </button>
+      </form>
     </main>
   );
 }
-
-function Field({ label, children }) {
-  return (
-    <label style={{ display: 'grid', gap: '8px' }}>
-      <span style={{ fontWeight: 600, color: 'var(--text-color)' }}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-const inputStyle = {
-  padding: '14px 16px',
-  borderRadius: '14px',
-  border: '1px solid var(--border-color)',
-  fontSize: '1rem',
-  background: '#fff',
-  width: '100%',
-};

@@ -6,8 +6,11 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { fetchProfileAndCache } from '@/src/utils/profile-cache';
 
+// ── Feature flags ─────────────────────────────────────────────────────────────
+const RESUME_ENABLED = process.env.NEXT_PUBLIC_RESUME_ENABLED === 'true';
+
 // ── Nav structure (no My Portfolio) ──────────────────────────────────────────
-const NAV = [
+const NAV_ALL = [
   {
     label: 'Learn',
     href: '/tracks',
@@ -24,15 +27,17 @@ const NAV = [
       { label: 'Mock Interview',  href: '/mock-interview', desc: 'AI-powered interview practice' },
     ],
   },
-  {
+  ...(RESUME_ENABLED ? [{
     label: 'Resume',
     href: '/resume',
     sub: [
       { label: 'AI Resume Studio', href: '/resume',        desc: 'Analyze · Edit · Score · Download' },
       { label: 'Resume Vault',     href: '/profile',       desc: 'Saved role-based resumes' },
     ],
-  },
+  }] : []),
 ];
+const NAV = NAV_ALL;
+
 
 export function AppShell({ children }) {
   const pathname = usePathname();

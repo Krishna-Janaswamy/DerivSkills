@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
-import { getRoleById } from '@/src/data/roles';
+import { NextResponse }  from 'next/server';
+import { getRoleById }   from '@/src/data/roles';
 import { generateStructuredJson } from '@/lib/ai';
+import { withSecurity, errorResponse }  from '@/lib/api-security';
 
 // Using standard Gemini schema
 const ROADMAP_PLAN_SCHEMA = {
@@ -77,10 +78,22 @@ const ROADMAP_PLAN_OPENAI_SCHEMA = {
 };
 
 export async function POST(request) {
-  try {
-    const { roleId, experienceLevel, weeklyHours, goal, background } = await request.json();
-    const role = getRoleById(roleId);
+  const guard = await withSecurity(request, {
+    auth:      true,
+    rateLimit: { limit: 5, window: 60, prefix: 'rl:plan:' },
+    schema: {
+      roleId:          { type: 'string',  required: true,  minLength: 1, maxLength: 100 },
+      experienceLevel: { type: 'string',  required: false, maxLength: 100 },
+      weeklyHours:     { type: 'string',  required: false, maxLength: 50 },
+      goal:            { type: 'string',  required: false, maxLength: 500 },
+      background:      { type: 'string',  required: false, maxLength: 500 },
+    },
+  });
+  if (!guard.ok) return guard.response;
+  const { roleId, experienceLevel, weeklyHours, goal, background } = guard.body;
 
+  try {
+    const role = getRoleById(roleId);
     if (!role) {
       return NextResponse.json({ error: 'Unknown role selected.' }, { status: 400 });
     }
@@ -96,12 +109,7 @@ export async function POST(request) {
           marketDemand: role.marketDemand,
           roadmap: role.roadmap,
         },
-        learnerProfile: {
-          experienceLevel,
-          weeklyHours,
-          goal,
-          background,
-        },
+        learnerProfile: { experienceLevel, weeklyHours, goal, background },
         instructions:
           'Build a personalized study plan using the exact role roadmap. Keep guidance practical, realistic, and hiring-focused. Mention where the learner should spend extra attention based on their background.',
       },
@@ -113,9 +121,6 @@ export async function POST(request) {
 
     return NextResponse.json({ plan });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Unable to process your request at this time.' },
-      { status: 500 }
-    );
+    return errorResponse(error, '[roadmap-plan]');
   }
 }
