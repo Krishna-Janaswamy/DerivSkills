@@ -9,6 +9,7 @@ import { getSubtopicKey } from '@/src/utils/progress';
 function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learningData, triggerSync }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [detailSource, setDetailSource] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,6 +34,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
          const data = await res.json();
          if (!res.ok) throw new Error(data.error);
          setDetail(data.detail);
+         setDetailSource(data.source || 'live-api');
        } catch (err) {
          setError(err.message || 'Failed to load details.');
        }
@@ -60,7 +62,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
   }
 
   return (
-    <div style={{ 
+    <div className="outcome-brick" style={{ 
       gridColumn: isExpanded ? '1 / -1' : 'auto',
       background: isExpanded ? 'rgba(0,0,0,0.1)' : 'var(--surface-color)',
       border: isExpanded ? '2px solid var(--brand)' : '2px solid var(--border-color)',
@@ -88,7 +90,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
     }}
     >
        {/* Clickable Header */}
-       <div 
+       <div className="outcome-brick-header"
          style={{ 
            display: 'flex', alignItems: 'center',
            padding: '1.25rem 1.5rem',
@@ -166,7 +168,30 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                       <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: 1.6, color: 'var(--text-color)' }}>{detail.definition}</p>
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      alignSelf: 'flex-start',
+                      gap: '0.5rem',
+                      padding: '0.45rem 0.7rem',
+                      borderRadius: '999px',
+                      border: `1px solid ${detailSource === 'live-api' ? 'rgba(245,158,11,0.35)' : 'rgba(16,185,129,0.35)'}`,
+                      background: detailSource === 'live-api' ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
+                      color: detailSource === 'live-api' ? '#f59e0b' : '#10b981',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em'
+                    }}>
+                      <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '999px', background: 'currentColor' }} />
+                      {detailSource === 'redis-cache'
+                        ? 'Redis cache hit'
+                        : detailSource === 'database-cache'
+                          ? 'Database cache hit'
+                          : 'Live AI API'}
+                    </div>
+
+                    <div className="topic-detail-two-col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>
                       <div style={{ background: 'var(--bg-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                         <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Core Concepts</h4>
                         <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-color)' }}>
@@ -262,7 +287,7 @@ export function ImmersiveCurriculum({ role }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 80px)', background: 'var(--bg-color)', width: '100vw', margin: '0 calc(-50vw + 50%)', position: 'relative' }}>
+    <div className="curriculum-shell" style={{ display: 'flex', minHeight: 'calc(100vh - 80px)', background: 'var(--bg-color)', width: '100vw', margin: '0 calc(-50vw + 50%)', position: 'relative' }}>
       
       {/* LEFT SIDEBAR: Navigational Blueprint */}
       <div className="curriculum-sidebar" style={{ 
@@ -375,7 +400,7 @@ export function ImmersiveCurriculum({ role }) {
       </div>
 
       {/* RIGHT MAIN PANEL: Brick Wall Area */}
-      <div style={{ 
+      <div className="curriculum-main" style={{ 
         flex: 1, 
         padding: '5rem 6rem', 
         overflowY: 'auto', 
@@ -423,7 +448,7 @@ export function ImmersiveCurriculum({ role }) {
             </div>
 
             {/* THE BRICK WALL OUTCOMES */}
-            <div style={{ 
+            <div className="outcomes-grid" style={{ 
               display: 'grid', 
               gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
               gap: '1.5rem',

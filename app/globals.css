@@ -730,3 +730,161 @@ input:focus, select:focus, textarea:focus {
   .timeline-item.is-left .timeline-content::after, .timeline-item.is-right .timeline-content::before { left: -18px; right: auto; }
   .timeline-row { flex-direction: column; }
 }
+
+@media (max-width: 820px) {
+  .app-frame {
+    padding: 0;
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    margin-bottom: 0;
+    border-radius: 0;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand-copy {
+    height: auto;
+  }
+
+  .header-center-nav {
+    position: static;
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    transform: none;
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .header-right {
+    margin-left: auto;
+  }
+
+  .profile-button {
+    max-width: 140px;
+    padding-right: 10px;
+  }
+
+  .profile-button span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-dropdown {
+    left: 0;
+    transform: none;
+    min-width: min(260px, calc(100vw - 24px));
+  }
+
+  .curriculum-shell {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  .curriculum-sidebar {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .curriculum-sidebar > div:last-child {
+    display: flex !important;
+    gap: 12px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 1rem !important;
+    scrollbar-width: thin !important;
+  }
+
+  .curriculum-sidebar > div:last-child > div {
+    min-width: 260px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .curriculum-main {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 1.25rem !important;
+  }
+
+  .curriculum-main h2 {
+    font-size: 2rem !important;
+    overflow-wrap: anywhere;
+  }
+
+  .outcomes-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .outcome-brick {
+    grid-column: auto !important;
+  }
+
+  .outcome-brick-header {
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+  }
+
+  .outcome-brick-header > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .outcome-brick-header button {
+    flex: 0 0 auto;
+  }
+
+  .topic-detail-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-logo-shell {
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand-title {
+    font-size: 0.95rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.5rem;
+  }
+
+  .nav-pill {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .profile-button {
+    max-width: 112px;
+    font-size: 0.8rem;
+  }
+
+  .curriculum-main {
+    padding: 1rem !important;
+  }
+
+  .curriculum-main h2 {
+    font-size: 1.65rem !important;
+  }
+
+  .outcome-brick-header {
+    flex-wrap: wrap;
+  }
+}

@@ -2,6 +2,7 @@ import { NextResponse }  from 'next/server';
 import { prisma }         from '@/lib/prisma';
 import { generateStructuredJson } from '@/lib/ai';
 import { withSecurity, errorResponse } from '@/lib/api-security';
+import { getFromCache, setInCache } from '@/lib/cache';
 
 
 const TOPIC_DETAIL_SCHEMA = {
@@ -32,6 +33,26 @@ const TOPIC_DETAIL_SCHEMA = {
   },
   required: ['definition', 'descriptionPoints', 'usagePoints', 'example', 'illustration'],
 };
+
+const TOPIC_DETAIL_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+function normalizeCachePart(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function isCompleteDetail(detail) {
+  return Boolean(
+    detail
+      && detail.definition
+      && detail.descriptionPoints
+      && detail.usagePoints
+      && detail.example
+      && detail.illustration
+  );
+}
 
 const TOPIC_DETAIL_OPENAI_SCHEMA = {
   type: 'object',
@@ -72,15 +93,32 @@ export async function POST(request) {
   const { topic, context, roleTitle } = guard.body;
 
   try {
-    const topicHash = `${roleTitle.toLowerCase().trim()}_${topic.toLowerCase().trim()}`;
+    const normalizedRole = normalizeCachePart(roleTitle);
+    const normalizedTopic = normalizeCachePart(topic);
+    const topicHash = `${normalizedRole}_${normalizedTopic}`;
+    const redisKey = `topic-detail:v1:${topicHash}`;
+
+    try {
+      const cachedDetail = await getFromCache(redisKey);
+      if (isCompleteDetail(cachedDetail)) {
+        return NextResponse.json({ detail: cachedDetail, source: 'redis-cache' });
+      }
+    } catch (cacheError) {
+      console.warn('[topic-detail] Redis cache read failed:', cacheError?.message);
+    }
 
     const existingCache = await prisma.topicExplanationCache.findUnique({ where: { topicHash } });
     if (existingCache) {
       const detail = typeof existingCache.payload === 'string'
         ? JSON.parse(existingCache.payload)
         : existingCache.payload;
-      if (detail.descriptionPoints && detail.illustration) {
-        return NextResponse.json({ detail });
+      if (isCompleteDetail(detail)) {
+        try {
+          await setInCache(redisKey, detail, TOPIC_DETAIL_CACHE_TTL_SECONDS);
+        } catch (cacheError) {
+          console.warn('[topic-detail] Redis cache warm failed:', cacheError?.message);
+        }
+        return NextResponse.json({ detail, source: 'database-cache' });
       }
     }
 
@@ -94,17 +132,24 @@ export async function POST(request) {
       temperature: 0.3,
     });
 
-    if (existingCache) {
-      prisma.topicExplanationCache.update({ where: { topicHash }, data: { payload: detail } })
-        .catch(err => console.error('Cache Update Error:', err));
-    } else {
-      prisma.topicExplanationCache.create({ data: { topicHash, payload: detail } })
-        .catch(err => console.error('Cache Write Error:', err));
+    try {
+      await setInCache(redisKey, detail, TOPIC_DETAIL_CACHE_TTL_SECONDS);
+    } catch (cacheError) {
+      console.warn('[topic-detail] Redis cache write failed:', cacheError?.message);
     }
 
-    return NextResponse.json({ detail });
+    try {
+      if (existingCache) {
+        await prisma.topicExplanationCache.update({ where: { topicHash }, data: { payload: detail } });
+      } else {
+        await prisma.topicExplanationCache.create({ data: { topicHash, payload: detail } });
+      }
+    } catch (dbCacheError) {
+      console.error('[topic-detail] DB cache write failed:', dbCacheError);
+    }
+
+    return NextResponse.json({ detail, source: 'live-api' });
   } catch (error) {
     return errorResponse(error, '[topic-detail]');
   }
 }
-
