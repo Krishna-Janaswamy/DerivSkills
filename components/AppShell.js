@@ -134,11 +134,6 @@ export function AppShell({ children }) {
                 'Loading...'
               ) : (
                 <>
-                  <img
-                    className="profile-button-avatar"
-                    src={session?.user?.image || '/techgen-logo.png'}
-                    alt="Avatar"
-                  />
                   <span>{session?.user?.name || 'Profile'}</span>
                   <span className="profile-button-caret">▾</span>
                 </>
