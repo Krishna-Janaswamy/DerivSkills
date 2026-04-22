@@ -124,7 +124,7 @@ function SignInGate() {
 }
 
 // ── Avatar hero card ───────────────────────────────────────────────────────────
-function ProfileHero({ session, customName, presentRole, saveStatus, onSignOut }) {
+function ProfileHero({ session, customName, presentRole, saveStatus, onSignOut, progress }) {
   const initials = (customName || session?.user?.name || '?')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
@@ -179,18 +179,37 @@ function ProfileHero({ session, customName, presentRole, saveStatus, onSignOut }
         <SaveStatusDot status={saveStatus} />
       </div>
 
-      {/* Sign out */}
-      <button
-        onClick={onSignOut}
-        style={{
-          padding: '0.5rem 1rem', borderRadius: '8px',
-          border: '1px solid var(--border)', background: 'transparent',
-          color: 'var(--text-secondary)', fontSize: '0.83rem', fontWeight: 600,
-          cursor: 'pointer', flexShrink: 0,
-        }}
-      >
-        Log out
-      </button>
+      {/* Progress & Sign out */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1.2rem', flexShrink: 0 }}>
+        <button
+          onClick={onSignOut}
+          style={{
+            padding: '0.4rem 0.8rem', borderRadius: '8px',
+            border: '1px solid var(--border)', background: 'transparent',
+            color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Log out
+        </button>
+        
+        {progress !== undefined && (
+          <div style={{ width: '130px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+              <span>Profile Status</span>
+              <span style={{ color: progress === 100 ? '#10b981' : 'var(--text-color)' }}>{progress}%</span>
+            </div>
+            <div style={{ height: '6px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ 
+                height: '100%', 
+                background: progress === 100 ? '#10b981' : 'var(--brand)', 
+                width: `${progress}%`,
+                transition: 'width 0.5s ease-out, background 0.5s ease'
+              }} />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -337,7 +356,9 @@ export default function ProfilePage() {
         });
       }
       
-      await update();
+      // Update session silently in background without blocking UI
+      update({ name: customName }).catch(() => {});
+      
       setSaveStatus('saved');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
@@ -370,6 +391,30 @@ export default function ProfilePage() {
   const isStudent = details.userType === 'student';
   const isProfessional = details.userType === 'professional';
 
+  const calculateProgress = () => {
+    const fields = [
+      customName,
+      presentRole,
+      details.userType,
+      details.headline,
+      details.bio,
+      details.location,
+    ];
+    
+    if (isStudent) {
+      fields.push(details.collegeName, details.branch, details.studentYear);
+    } else if (isProfessional) {
+      fields.push(details.company, details.yearsExperience);
+    }
+
+    // Add +2 to denominator to represent missing fields if userType is unset yet
+    const total = details.userType ? fields.length : fields.length + 2; 
+    const filled = fields.filter(f => f && String(f).trim() !== '').length;
+    
+    return Math.round((filled / total) * 100);
+  };
+  const currentProgress = calculateProgress();
+
   return (
     <main className="page-shell" style={{ maxWidth: 680, margin: '0 auto', padding: '2.5rem 0 5rem' }}>
       <form onSubmit={handleSave} style={{ display: 'grid', gap: '1.25rem' }}>
@@ -380,6 +425,7 @@ export default function ProfilePage() {
           customName={customName}
           presentRole={presentRole}
           saveStatus={saveStatus}
+          progress={currentProgress}
           onSignOut={() => signOut({ callbackUrl: '/' })}
         />
 
