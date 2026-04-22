@@ -38,6 +38,7 @@ export default function MockInterviewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [bookingResult, setBookingResult] = useState(null);
+  const [bookingStats, setBookingStats] = useState(null);
 
   function resetFeedback() { setSubmitError(''); setBookingResult(null); }
   function set(field, value) { resetFeedback(); setForm(f => ({ ...f, [field]: value })); }
@@ -47,9 +48,18 @@ export default function MockInterviewPage() {
     let ignore = false;
     async function hydrate() {
       try {
-        const res  = await fetch('/api/profile');
-        const data = await res.json();
-        if (!res.ok || ignore) return;
+        const [profRes, statsRes] = await Promise.all([
+          fetch('/api/profile'),
+          fetch('/api/mock-interview-booking')
+        ]);
+        
+        if (!ignore && statsRes.ok) {
+          const stats = await statsRes.json();
+          setBookingStats(stats);
+        }
+
+        const data = await profRes.json();
+        if (!profRes.ok || ignore) return;
         const pd  = data.profileDetails || {};
         const role = data.user?.presentRole || (pd.userType === 'student' ? 'Student' : '') || '';
         const org  = pd.company || pd.collegeName || '';
@@ -98,6 +108,11 @@ export default function MockInterviewPage() {
       const data = ct.includes('application/json') ? await res.json() : { error: 'Unexpected response.' };
       if (!res.ok) throw new Error(data.error || 'Something went wrong.');
       setBookingResult(data);
+      
+      // Refresh stats after successful booking
+      const statsRes = await fetch('/api/mock-interview-booking');
+      if (statsRes.ok) setBookingStats(await statsRes.json());
+      
     } catch (err) {
       const isFetch = !err?.message || ['fetch','network','Failed to fetch'].some(k => err.message.includes(k));
       setSubmitError(isFetch ? 'Could not reach the server. Please check your connection.' : err.message);
@@ -110,14 +125,26 @@ export default function MockInterviewPage() {
     <main className="page-shell" style={{ maxWidth: 700, margin: '0 auto' }}>
 
       {/* Page title */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.3rem', fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-color)' }}>
-          Book a Mock Interview
-        </h1>
-        <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-          Fill in the form below and our team will get back to you to confirm a time.
-          {' '}<span style={{ color: '#ef4444' }}>*</span> fields are required.
-        </p>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ margin: '0 0 0.3rem', fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-color)' }}>
+            Book a Mock Interview
+          </h1>
+          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            Fill in the form below and our team will get back to you to confirm a time.
+            {' '}<span style={{ color: '#ef4444' }}>*</span> fields are required.
+          </p>
+        </div>
+        {bookingStats && (
+          <div style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', padding: '0.6rem 1rem', borderRadius: '10px', textAlign: 'right' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
+              Requests Used
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: bookingStats.count >= bookingStats.limit ? '#ef4444' : 'var(--brand)' }}>
+              {bookingStats.count} <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>/ {bookingStats.limit}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Form card */}
@@ -202,19 +229,38 @@ export default function MockInterviewPage() {
         )}
 
         {/* Submit */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{
-            padding: '0.85rem', borderRadius: '10px', border: 'none',
-            background: 'var(--brand)', color: '#fff',
-            fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
-            cursor: isSubmitting ? 'wait' : 'pointer',
-            opacity: isSubmitting ? 0.75 : 1,
-          }}
-        >
-          {isSubmitting ? 'Sending…' : 'Send Request'}
-        </button>
+        {(() => {
+          const limitReachedMsg = bookingStats?.count >= bookingStats?.limit 
+            ? "You have reached your maximum limit of requests." 
+            : (bookingStats?.nextAvailableAt && new Date(bookingStats.nextAvailableAt) > new Date() 
+                ? `You can send your next request after ${new Date(bookingStats.nextAvailableAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}` 
+                : null);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                type="submit"
+                disabled={isSubmitting || !!limitReachedMsg}
+                style={{
+                  padding: '0.85rem', borderRadius: '10px', border: 'none',
+                  background: limitReachedMsg ? 'var(--surface-strong)' : 'var(--brand)', 
+                  color: limitReachedMsg ? 'var(--text-secondary)' : '#fff',
+                  fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
+                  cursor: isSubmitting ? 'wait' : (limitReachedMsg ? 'not-allowed' : 'pointer'),
+                  opacity: isSubmitting ? 0.75 : 1,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isSubmitting ? 'Sending…' : 'Send Request'}
+              </button>
+              {limitReachedMsg && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#f59e0b', fontWeight: 500, textAlign: 'center' }}>
+                  ⏳ {limitReachedMsg}
+                </p>
+              )}
+            </div>
+          );
+        })()}
       </form>
     </main>
   );

@@ -117,6 +117,35 @@ function getEmailErrorMessage(error) {
   return 'The booking was saved, but the notification email could not be sent.';
 }
 
+export async function GET(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ count: 0, limit: 5, nextAvailableAt: null });
+    }
+
+    const existingBookings = await prisma.mockInterviewBooking.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    let nextAvailableAt = null;
+    if (existingBookings.length > 0) {
+      const lastBookingTime = new Date(existingBookings[0].createdAt).getTime();
+      nextAvailableAt = new Date(lastBookingTime + 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    return NextResponse.json({
+      count: existingBookings.length,
+      limit: 5,
+      nextAvailableAt
+    });
+  } catch (error) {
+    return NextResponse.json({ count: 0, limit: 5, nextAvailableAt: null });
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -152,19 +181,35 @@ export async function POST(request) {
       );
     }
 
-    // Prevent multiple bookings for the same user/email
+    // Prevent more than 5 bookings, and enforce 24-hour interval
     const orConditions = [{ email: payload.email }];
     if (session?.user?.id) {
       orConditions.push({ userId: session.user.id });
     }
-    const existingBooking = await prisma.mockInterviewBooking.findFirst({
+    const existingBookings = await prisma.mockInterviewBooking.findMany({
       where: { OR: orConditions },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
     });
-    if (existingBooking) {
+
+    if (existingBookings.length >= 5) {
       return NextResponse.json(
-        { error: 'You have already submitted a mock interview request.' },
+        { error: 'You have reached the maximum limit of 5 mock interview requests.' },
         { status: 400 }
       );
+    }
+
+    if (existingBookings.length > 0) {
+      const lastBookingTime = new Date(existingBookings[0].createdAt).getTime();
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      if (now - lastBookingTime < twentyFourHours) {
+        return NextResponse.json(
+          { error: 'You can only send one request every 24 hours. Please wait before trying again.' },
+          { status: 400 }
+        );
+      }
     }
 
     const { subject, body: emailBody } = buildEmailTemplate(payload);
