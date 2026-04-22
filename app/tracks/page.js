@@ -46,22 +46,9 @@ export default function RoadmapCatalogPage() {
         display: 'flex', alignItems: 'center', gap: '1.5rem',
         flexWrap: 'wrap'
       }}>
-        
+
         {/* Master Toggle: Role vs Skill */}
         <div style={{ flex: '1 1 300px', display: 'flex', background: 'rgba(0,0,0,0.4)', padding: '6px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={() => setActiveType('role')}
-            style={{
-              flex: 1, padding: '12px 16px', fontSize: '0.95rem', fontWeight: 700,
-              background: activeType === 'role' ? 'rgba(255,255,255,0.12)' : 'transparent',
-              color: activeType === 'role' ? '#fff' : 'rgba(255,255,255,0.4)',
-              borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: activeType === 'role' ? '0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.1)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-            }}
-          >
-            💼 Industry Roles
-          </button>
           <button
             onClick={() => setActiveType('skill')}
             style={{
@@ -74,6 +61,19 @@ export default function RoadmapCatalogPage() {
             }}
           >
             ⚡ Core Skills
+          </button>
+          <button
+            onClick={() => setActiveType('role')}
+            style={{
+              flex: 1, padding: '12px 16px', fontSize: '0.95rem', fontWeight: 700,
+              background: activeType === 'role' ? 'rgba(255,255,255,0.12)' : 'transparent',
+              color: activeType === 'role' ? '#fff' : 'rgba(255,255,255,0.4)',
+              borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: activeType === 'role' ? '0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.1)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+            }}
+          >
+            💼 Industry Roles
           </button>
         </div>
 
