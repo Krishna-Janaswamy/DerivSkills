@@ -182,6 +182,7 @@ function ProfileHero({ session, customName, presentRole, saveStatus, onSignOut, 
       {/* Progress & Sign out */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1.2rem', flexShrink: 0 }}>
         <button
+          type="button"
           onClick={onSignOut}
           style={{
             padding: '0.4rem 0.8rem', borderRadius: '8px',
@@ -225,6 +226,7 @@ function TabBar({ active, onChange }) {
       {TABS.map(t => (
         <button
           key={t.id}
+          type="button"
           onClick={() => onChange(t.id)}
           style={{
             flex: 1, padding: '0.6rem 0.5rem', borderRadius: '8px', border: 'none',
