@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'profileCache:';
-const CACHE_MAX_AGE_MS = 30 * 1000;
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function getStorageKey(userId) {
   if (!userId) return null;

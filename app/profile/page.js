@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
 import { TechGenSpinner } from '@/components/TechGenSpinner';
-import { fetchProfileAndCache, readProfileCache } from '@/src/utils/profile-cache';
+import { fetchProfileAndCache, readProfileCache, writeProfileCache } from '@/src/utils/profile-cache';
 import { ResumeVault } from '@/components/ResumeVault';
 
 const RESUME_ENABLED = process.env.NEXT_PUBLIC_RESUME_ENABLED === 'true';
@@ -279,24 +279,18 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    if (!userId) return;
-    const cached = readProfileCache(userId);
-    if (cached) { applyPayload(cached); setIsProfileReady(true); }
-  }, [userId]);
-
-  useEffect(() => {
-    if (!cacheKey) return;
-    try {
-      const stored = localStorage.getItem(cacheKey);
-      if (!stored) return;
-      const parsed = JSON.parse(stored);
-      if (parsed) { applyPayload(parsed); setIsProfileReady(true); }
-    } catch { /* ignore */ }
-  }, [cacheKey]);
-
-  useEffect(() => {
     if (!userId) { setIsProfileReady(false); return; }
-    setIsProfileReady(false);
+    
+    // 1. Try loading from cache immediately for instant UI
+    const cached = readProfileCache(userId);
+    if (cached) { 
+      applyPayload(cached); 
+      setIsProfileReady(true); 
+    } else {
+      setIsProfileReady(false);
+    }
+
+    // 2. Always fetch fresh data from API in the background
     let ignore = false;
     async function load() {
       try {
@@ -332,6 +326,17 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
+      
+      // Update local cache so we don't flash old data on navigation
+      const currentCache = readProfileCache(session.user.id);
+      if (currentCache) {
+        writeProfileCache(session.user.id, {
+          ...currentCache,
+          user: { ...currentCache.user, name: customName, presentRole },
+          profileDetails: details
+        });
+      }
+      
       await update();
       setSaveStatus('saved');
       setSaveSuccess(true);
