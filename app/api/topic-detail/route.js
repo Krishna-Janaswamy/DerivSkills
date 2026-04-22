@@ -35,7 +35,10 @@ const TOPIC_DETAIL_SCHEMA = {
 };
 
 const TOPIC_DETAIL_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+const TOPIC_DETAIL_MEMORY_TTL_MS = 10 * 60 * 1000;
+const TOPIC_DETAIL_MEMORY_MAX_ENTRIES = 500;
 const pendingTopicDetailRequests = new Map();
+const topicDetailMemoryCache = new Map();
 const TOPIC_DETAIL_BODY_SCHEMA = {
   topic:     { type: 'string', required: true, minLength: 1, maxLength: 200 },
   roleTitle: { type: 'string', required: true, minLength: 1, maxLength: 100 },
@@ -71,6 +74,34 @@ function responseWithMeta(detail, source, startedAt) {
       },
     },
   );
+}
+
+function getMemoryCache(key) {
+  const cached = topicDetailMemoryCache.get(key);
+  if (!cached) return null;
+
+  if (Date.now() > cached.expiresAt) {
+    topicDetailMemoryCache.delete(key);
+    return null;
+  }
+
+  topicDetailMemoryCache.delete(key);
+  topicDetailMemoryCache.set(key, cached);
+  return cached.detail;
+}
+
+function setMemoryCache(key, detail) {
+  if (!isCompleteDetail(detail)) return;
+
+  if (topicDetailMemoryCache.size >= TOPIC_DETAIL_MEMORY_MAX_ENTRIES) {
+    const oldestKey = topicDetailMemoryCache.keys().next().value;
+    if (oldestKey) topicDetailMemoryCache.delete(oldestKey);
+  }
+
+  topicDetailMemoryCache.set(key, {
+    detail,
+    expiresAt: Date.now() + TOPIC_DETAIL_MEMORY_TTL_MS,
+  });
 }
 
 function getRateLimitIdentifier(request) {
@@ -130,9 +161,15 @@ export async function POST(request) {
     const topicHash = `${normalizedRole}_${normalizedTopic}`;
     const redisKey = `topic-detail:v1:${topicHash}`;
 
+    const memoryCachedDetail = getMemoryCache(redisKey);
+    if (memoryCachedDetail) {
+      return responseWithMeta(memoryCachedDetail, 'memory-cache', startedAt);
+    }
+
     try {
       const cachedDetail = await getFromCache(redisKey);
       if (isCompleteDetail(cachedDetail)) {
+        setMemoryCache(redisKey, cachedDetail);
         return responseWithMeta(cachedDetail, 'redis-cache', startedAt);
       }
     } catch (cacheError) {
@@ -145,6 +182,7 @@ export async function POST(request) {
         ? JSON.parse(existingCache.payload)
         : existingCache.payload;
       if (isCompleteDetail(detail)) {
+        setMemoryCache(redisKey, detail);
         try {
           await setInCache(redisKey, detail, TOPIC_DETAIL_CACHE_TTL_SECONDS);
         } catch (cacheError) {
@@ -157,6 +195,7 @@ export async function POST(request) {
     const pendingRequest = pendingTopicDetailRequests.get(redisKey);
     if (pendingRequest) {
       const detail = await pendingRequest;
+      setMemoryCache(redisKey, detail);
       return responseWithMeta(detail, 'shared-live-api', startedAt);
     }
 
@@ -180,6 +219,7 @@ export async function POST(request) {
 
     pendingTopicDetailRequests.set(redisKey, generationPromise);
     const detail = await generationPromise;
+    setMemoryCache(redisKey, detail);
 
     try {
       await setInCache(redisKey, detail, TOPIC_DETAIL_CACHE_TTL_SECONDS);

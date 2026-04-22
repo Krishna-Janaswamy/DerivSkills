@@ -9,8 +9,6 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [detail, setDetail] = useState(null);
-  const [detailSource, setDetailSource] = useState('');
-  const [detailDurationMs, setDetailDurationMs] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { learningData, triggerSync, isLoaded } = useCloudSync();
@@ -79,8 +77,6 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
       if (!response.ok) throw new Error(data.error);
 
       setDetail(data.detail);
-      setDetailSource(data.source || 'live-api');
-      setDetailDurationMs(data.durationMs ?? null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -175,35 +171,6 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
               </div>
             ) : detail ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  alignSelf: 'flex-start',
-                  gap: '0.5rem',
-                  padding: '0.45rem 0.7rem',
-                  borderRadius: '999px',
-                  border: `1px solid ${detailSource === 'live-api' ? 'rgba(245,158,11,0.35)' : 'rgba(16,185,129,0.35)'}`,
-                  background: detailSource === 'live-api' ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
-                  color: detailSource === 'live-api' ? '#f59e0b' : '#10b981',
-                  fontSize: '0.78rem',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
-                }}>
-                  <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '999px', background: 'currentColor' }} />
-                  {detailSource === 'redis-cache'
-                    ? 'Redis cache hit'
-                    : detailSource === 'database-cache'
-                      ? 'Database cache hit'
-                      : detailSource === 'shared-live-api'
-                        ? 'Shared live request'
-                        : 'Live AI API'}
-                  {detailDurationMs !== null && (
-                    <span style={{ color: 'var(--text-secondary)', textTransform: 'none', letterSpacing: 0 }}>
-                      {detailDurationMs} ms
-                    </span>
-                  )}
-                </div>
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Definition</h4>
                   <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.6 }}>{detail.definition}</p>
