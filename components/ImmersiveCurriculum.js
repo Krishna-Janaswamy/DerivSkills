@@ -10,6 +10,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
   const [isExpanded, setIsExpanded] = useState(false);
   const [detail, setDetail] = useState(null);
   const [detailSource, setDetailSource] = useState('');
+  const [detailDurationMs, setDetailDurationMs] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,6 +36,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
          if (!res.ok) throw new Error(data.error);
          setDetail(data.detail);
          setDetailSource(data.source || 'live-api');
+         setDetailDurationMs(data.durationMs ?? null);
        } catch (err) {
          setError(err.message || 'Failed to load details.');
        }
@@ -155,7 +157,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                {isLoading ? (
                  <div style={{ padding: '2rem 0', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                    <div style={{ animation: 'spin 2s linear infinite', fontSize: '1.5rem' }}>✨</div>
-                   <span>Invoking AI tutor...</span>
+                   <span>Checking cache, then preparing the explanation if needed...</span>
                  </div>
                ) : error ? (
                  <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
@@ -188,7 +190,14 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                         ? 'Redis cache hit'
                         : detailSource === 'database-cache'
                           ? 'Database cache hit'
-                          : 'Live AI API'}
+                          : detailSource === 'shared-live-api'
+                            ? 'Shared live request'
+                            : 'Live AI API'}
+                      {detailDurationMs !== null && (
+                        <span style={{ color: 'var(--text-secondary)', textTransform: 'none', letterSpacing: 0 }}>
+                          {detailDurationMs} ms
+                        </span>
+                      )}
                     </div>
 
                     <div className="topic-detail-two-col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>

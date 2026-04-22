@@ -1,7 +1,7 @@
 import { NextResponse }  from 'next/server';
 import { prisma }         from '@/lib/prisma';
 import { generateStructuredJson } from '@/lib/ai';
-import { withSecurity, errorResponse } from '@/lib/api-security';
+import { errorResponse, rateLimit, validateBody } from '@/lib/api-security';
 import { getFromCache, setInCache } from '@/lib/cache';
 
 
@@ -35,6 +35,12 @@ const TOPIC_DETAIL_SCHEMA = {
 };
 
 const TOPIC_DETAIL_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+const pendingTopicDetailRequests = new Map();
+const TOPIC_DETAIL_BODY_SCHEMA = {
+  topic:     { type: 'string', required: true, minLength: 1, maxLength: 200 },
+  roleTitle: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+  context:   { type: 'string', required: false, maxLength: 500 },
+};
 
 function normalizeCachePart(value) {
   return String(value || '')
@@ -52,6 +58,25 @@ function isCompleteDetail(detail) {
       && detail.example
       && detail.illustration
   );
+}
+
+function responseWithMeta(detail, source, startedAt) {
+  const durationMs = Date.now() - startedAt;
+  return NextResponse.json(
+    { detail, source, durationMs },
+    {
+      headers: {
+        'X-Topic-Source': source,
+        'X-Topic-Duration-Ms': String(durationMs),
+      },
+    },
+  );
+}
+
+function getRateLimitIdentifier(request) {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'anonymous';
 }
 
 const TOPIC_DETAIL_OPENAI_SCHEMA = {
@@ -80,17 +105,24 @@ const TOPIC_DETAIL_OPENAI_SCHEMA = {
 };
 
 export async function POST(request) {
-  const guard = await withSecurity(request, {
-    auth:      false,
-    rateLimit: { limit: 10, window: 60, prefix: 'rl:topic:' },
-    schema: {
-      topic:     { type: 'string', required: true, minLength: 1, maxLength: 200 },
-      roleTitle: { type: 'string', required: true, minLength: 1, maxLength: 100 },
-      context:   { type: 'string', required: false, maxLength: 500 },
-    },
-  });
-  if (!guard.ok) return guard.response;
-  const { topic, context, roleTitle } = guard.body;
+  const startedAt = Date.now();
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+  }
+
+  const validation = validateBody(body, TOPIC_DETAIL_BODY_SCHEMA);
+  if (!validation.valid) {
+    return NextResponse.json(
+      { error: 'Validation failed.', details: validation.errors },
+      { status: 422 },
+    );
+  }
+
+  const { topic, context, roleTitle } = body;
 
   try {
     const normalizedRole = normalizeCachePart(roleTitle);
@@ -101,7 +133,7 @@ export async function POST(request) {
     try {
       const cachedDetail = await getFromCache(redisKey);
       if (isCompleteDetail(cachedDetail)) {
-        return NextResponse.json({ detail: cachedDetail, source: 'redis-cache' });
+        return responseWithMeta(cachedDetail, 'redis-cache', startedAt);
       }
     } catch (cacheError) {
       console.warn('[topic-detail] Redis cache read failed:', cacheError?.message);
@@ -118,19 +150,36 @@ export async function POST(request) {
         } catch (cacheError) {
           console.warn('[topic-detail] Redis cache warm failed:', cacheError?.message);
         }
-        return NextResponse.json({ detail, source: 'database-cache' });
+        return responseWithMeta(detail, 'database-cache', startedAt);
       }
     }
 
-    const detail = await generateStructuredJson({
-      systemPrompt:
-        'You are an expert AI tutor. For the provided sub-topic, provide a clear definition. Then provide a simple description in short bullet points. Then provide practical usage bullet points. Then provide one real-world example in very simple language. Finally, provide one short code example or practical illustration that helps a learner understand the concept quickly. Return JSON only adhering strictly to the schema provided.',
-      userPayload: { role: roleTitle, topicToExplain: topic, expectedOutcomes: context },
-      geminiSchema: TOPIC_DETAIL_SCHEMA,
-      openAiSchema: TOPIC_DETAIL_OPENAI_SCHEMA,
-      schemaName: 'topic_detail',
-      temperature: 0.3,
+    const pendingRequest = pendingTopicDetailRequests.get(redisKey);
+    if (pendingRequest) {
+      const detail = await pendingRequest;
+      return responseWithMeta(detail, 'shared-live-api', startedAt);
+    }
+
+    const rlResult = await rateLimit(getRateLimitIdentifier(request), {
+      limit: 10,
+      window: 60,
+      prefix: 'rl:topic:',
     });
+    if (rlResult) return rlResult;
+
+    const generationPromise = generateStructuredJson({
+        systemPrompt:
+          'You are an expert AI tutor. For the provided sub-topic, provide a clear definition. Then provide a simple description in short bullet points. Then provide practical usage bullet points. Then provide one real-world example in very simple language. Finally, provide one short code example or practical illustration that helps a learner understand the concept quickly. Return JSON only adhering strictly to the schema provided.',
+        userPayload: { role: roleTitle, topicToExplain: topic, expectedOutcomes: context },
+        geminiSchema: TOPIC_DETAIL_SCHEMA,
+        openAiSchema: TOPIC_DETAIL_OPENAI_SCHEMA,
+        schemaName: 'topic_detail',
+        temperature: 0.3,
+      })
+      .finally(() => pendingTopicDetailRequests.delete(redisKey));
+
+    pendingTopicDetailRequests.set(redisKey, generationPromise);
+    const detail = await generationPromise;
 
     try {
       await setInCache(redisKey, detail, TOPIC_DETAIL_CACHE_TTL_SECONDS);
@@ -148,7 +197,7 @@ export async function POST(request) {
       console.error('[topic-detail] DB cache write failed:', dbCacheError);
     }
 
-    return NextResponse.json({ detail, source: 'live-api' });
+    return responseWithMeta(detail, 'live-api', startedAt);
   } catch (error) {
     return errorResponse(error, '[topic-detail]');
   }

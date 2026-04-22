@@ -10,6 +10,7 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [detail, setDetail] = useState(null);
   const [detailSource, setDetailSource] = useState('');
+  const [detailDurationMs, setDetailDurationMs] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { learningData, triggerSync, isLoaded } = useCloudSync();
@@ -79,6 +80,7 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
 
       setDetail(data.detail);
       setDetailSource(data.source || 'live-api');
+      setDetailDurationMs(data.durationMs ?? null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -165,7 +167,7 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>✨</div>
-                <p style={{ fontSize: '1.1rem' }}>Generating a simple explanation and practical example...</p>
+                <p style={{ fontSize: '1.1rem' }}>Checking cache, then preparing the explanation if needed...</p>
               </div>
             ) : error ? (
               <div style={{ color: '#dc2626', padding: '1rem', background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px' }}>
@@ -193,7 +195,14 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
                     ? 'Redis cache hit'
                     : detailSource === 'database-cache'
                       ? 'Database cache hit'
-                      : 'Live AI API'}
+                      : detailSource === 'shared-live-api'
+                        ? 'Shared live request'
+                        : 'Live AI API'}
+                  {detailDurationMs !== null && (
+                    <span style={{ color: 'var(--text-secondary)', textTransform: 'none', letterSpacing: 0 }}>
+                      {detailDurationMs} ms
+                    </span>
+                  )}
                 </div>
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Definition</h4>
