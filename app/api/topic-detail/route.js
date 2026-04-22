@@ -35,7 +35,7 @@ const TOPIC_DETAIL_SCHEMA = {
 };
 
 const TOPIC_DETAIL_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
-const TOPIC_DETAIL_MEMORY_TTL_MS = 10 * 60 * 1000;
+const TOPIC_DETAIL_MEMORY_TTL_MS = 30 * 60 * 1000;
 const TOPIC_DETAIL_MEMORY_MAX_ENTRIES = 500;
 const pendingTopicDetailRequests = new Map();
 const topicDetailMemoryCache = new Map();
