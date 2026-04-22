@@ -153,7 +153,7 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                {isLoading ? (
                  <div style={{ padding: '2rem 0', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                    <div style={{ animation: 'spin 2s linear infinite', fontSize: '1.5rem' }}>✨</div>
-                   <span>Checking cache, then preparing the explanation if needed...</span>
+                   <span>Loading learning content...</span>
                  </div>
                ) : error ? (
                  <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
