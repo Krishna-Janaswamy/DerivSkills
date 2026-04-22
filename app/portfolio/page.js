@@ -323,13 +323,7 @@ export default function PortfolioPage() {
     }
   }, [aiContent]);
 
-  if (!isLoaded || status === 'loading') {
-    return (
-      <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <TechGenSpinner text="Analyzing Cloud Profiles..." />
-      </main>
-    );
-  }
+  // Remove global loading block to allow SSR of the page shell and header.
 
   const handleResumeSave = (e) => {
     e.preventDefault();
@@ -543,7 +537,11 @@ export default function PortfolioPage() {
             Every time you complete a subtopic inside <strong>My Learnings</strong>, it is permanently harvested here. Use these keywords aggressively inside your portfolio and LinkedIn.
           </p>
 
-          {verifiedSkills.length > 0 ? (
+          {!isLoaded || status === 'loading' ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+              <TechGenSpinner text="Loading Verified Skills..." />
+            </div>
+          ) : verifiedSkills.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
               {verifiedSkills.map((skill, i) => (
                 <div key={i} style={{ 

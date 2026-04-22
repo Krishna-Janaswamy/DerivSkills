@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
-function PracticeStudio() {
-  const searchParams = useSearchParams();
+export default function PracticePage() {
   const router = useRouter();
   
   const [language, setLanguage] = useState('javascript');
@@ -17,8 +16,13 @@ function PracticeStudio() {
 
   // Sync initial state if URL params change or load from sessionStorage
   useEffect(() => {
-    const urlCode = searchParams.get('code');
-    const urlLang = searchParams.get('lang');
+    let urlCode = null;
+    let urlLang = null;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      urlCode = params.get('code');
+      urlLang = params.get('lang');
+    }
     
     if (urlCode) {
       setCode(urlCode);
@@ -45,7 +49,7 @@ function PracticeStudio() {
         setLanguage(vizLang);
       }
     }
-  }, [searchParams]);
+  }, []);
 
   const handleVisualize = () => {
     sessionStorage.setItem('derivskills_viz_code', code);
@@ -351,19 +355,5 @@ function PracticeStudio() {
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}} />
     </div>
-  );
-}
-
-export default function PracticePage() {
-  return (
-    <Suspense fallback={
-      <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-color)', color: 'white', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ animation: 'spin 2s linear infinite', fontSize: '2rem', marginBottom: '1rem' }}>⚙️</div>
-        <h2 style={{ marginLeft: '1rem' }}>Loading Practice Studio...</h2>
-        <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
-      </div>
-    }>
-      <PracticeStudio />
-    </Suspense>
   );
 }

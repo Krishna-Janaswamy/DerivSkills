@@ -23,17 +23,15 @@ export default function DashboardPage() {
     router.push('/');
   }
 
-  if (!isLoaded) {
-    return (
-      <main className="page-shell" style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-        <TechGenSpinner text="Loading Dashboard..." />
-      </main>
-    );
-  }
+  // Removed the early global isLoaded block to enable immediate SSR of the page shell.
 
-  if (!plan) {
-    return (
-      <main className="page-shell">
+  return (
+    <main className="page-shell">
+      {!isLoaded ? (
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
+          <TechGenSpinner text="Loading Dashboard..." />
+        </div>
+      ) : !plan ? (
         <section className="detail-hero" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
           <h1>No Active Plan Found</h1>
           <p className="hero-text" style={{ maxWidth: '600px', margin: '1rem auto 2rem' }}>
@@ -43,13 +41,9 @@ export default function DashboardPage() {
             Explore Roles & Generate Plan
           </Link>
         </section>
-      </main>
-    );
-  }
-
-  return (
-    <main className="page-shell">
-      <ActiveDashboard plan={plan} onClear={handleClear} />
+      ) : (
+        <ActiveDashboard plan={plan} onClear={handleClear} />
+      )}
     </main>
   );
 }

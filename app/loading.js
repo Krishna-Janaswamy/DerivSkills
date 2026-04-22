@@ -1,9 +1,6 @@
-import { TechGenSpinner } from '@/components/TechGenSpinner';
-
 export default function Loading() {
-  return (
-    <main className="page-shell" style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-      <TechGenSpinner text="Loading..." />
-    </main>
-  );
+  // Returns null to opt out of global suspense blocking.
+  // This allows the static page shells and layout to Server-Side Render (SSR) 
+  // immediately without delay, significantly improving initial load times.
+  return null;
 }

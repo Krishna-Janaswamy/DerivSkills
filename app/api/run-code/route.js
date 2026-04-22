@@ -1,16 +1,4 @@
-import { exec } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { NextResponse } from 'next/server';
-
-function runCommand(command) {
-  return new Promise((resolve) => {
-    exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
-      resolve({ stdout, stderr, error });
-    });
-  });
-}
 
 export async function POST(req) {
   try {
@@ -19,65 +7,65 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Language and code are required' }, { status: 400 });
     }
 
-    const tmpDir = os.tmpdir();
-    const id = Date.now().toString() + Math.floor(Math.random() * 1000);
-    
-    let command = '';
-    let filePath = '';
+    // Since Piston API is now whitelisted, we will securely proxy our standard "Run Code" 
+    // execution through the Pythontutor sandbox engine we already use for visualization!
+    // This provides free, secure execution with step-limit (infinite loop) protection.
+    let endpoint = 'https://pythontutor.com/web_exec_py3.py';
+    if (language === 'javascript') endpoint = 'https://pythontutor.com/web_exec_js.py';
+    else if (language === 'java') endpoint = 'https://pythontutor.com/web_exec_java.py';
+    else if (language === 'c') endpoint = 'https://pythontutor.com/web_exec_c.py';
+    else if (language === 'cpp') endpoint = 'https://pythontutor.com/web_exec_cpp.py';
 
-    if (language === 'javascript') {
-      filePath = path.join(tmpDir, `script_${id}.js`);
-      fs.writeFileSync(filePath, code);
-      command = `node ${filePath}`;
-    } else if (language === 'python') {
-      filePath = path.join(tmpDir, `script_${id}.py`);
-      fs.writeFileSync(filePath, code);
-      command = `python3 ${filePath}`;
-    } else if (language === 'java') {
-      const dirPath = path.join(tmpDir, `java_${id}`);
-      fs.mkdirSync(dirPath, { recursive: true });
-      
-      const match = code.match(/public\s+class\s+([A-Za-z0-9_]+)/);
-      const className = match ? match[1] : 'Main';
-      filePath = path.join(dirPath, `${className}.java`);
-      fs.writeFileSync(filePath, code);
-      command = `cd ${dirPath} && java ${className}.java`;
-    } else if (language === 'c') {
-      const dirPath = path.join(tmpDir, `c_${id}`);
-      fs.mkdirSync(dirPath, { recursive: true });
-      filePath = path.join(dirPath, `main.c`);
-      const outPath = path.join(dirPath, `a.out`);
-      fs.writeFileSync(filePath, code);
-      command = `gcc -x c ${filePath} -o ${outPath} && ${outPath}`;
-    } else if (language === 'cpp') {
-      const dirPath = path.join(tmpDir, `cpp_${id}`);
-      fs.mkdirSync(dirPath, { recursive: true });
-      filePath = path.join(dirPath, `main.cpp`);
-      const outPath = path.join(dirPath, `a.out`);
-      fs.writeFileSync(filePath, code);
-      command = `g++ -x c++ ${filePath} -o ${outPath} && ${outPath}`;
-    } else {
-      return NextResponse.json({ error: 'Unsupported language' }, { status: 400 });
-    }
+    const url = new URL(endpoint);
+    url.searchParams.append('user_script', code);
+    url.searchParams.append('options_json', JSON.stringify({
+      cumulative_mode: false,
+      heap_primitives: false,
+      show_only_outputs: false,
+      origin: 'opt-frontend.js'
+    }));
 
-    const { stdout, stderr, error } = await runCommand(command);
-    
-    // Clean up
-    try {
-      if (language === 'java' || language === 'c' || language === 'cpp') {
-        fs.rmSync(path.dirname(filePath), { recursive: true, force: true });
-      } else {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'DerivSkills-Execution-Engine/1.0'
       }
+    });
+
+    const textData = await response.text();
+    let data;
+    try {
+      data = JSON.parse(textData);
     } catch (e) {
-      console.error('Cleanup error:', e);
+      throw new Error("Execution engine returned an invalid response.");
     }
 
-    return NextResponse.json({
-      output: stdout || '',
-      error: stderr || (error ? error.message : '')
-    });
+    if (data && data.trace && data.trace.length > 0) {
+       const lastStep = data.trace[data.trace.length - 1];
+       
+       let finalOutput = lastStep.stdout || '';
+       let finalError = '';
+
+       // Check for compilation errors or runtime exceptions
+       if (lastStep.event === 'uncaught_exception') {
+          finalError = lastStep.exception_msg || 'An unknown exception occurred.';
+       }
+
+       return NextResponse.json({
+         output: finalOutput,
+         error: finalError
+       });
+    }
+
+    if (data && data.error) {
+       return NextResponse.json({ output: '', error: data.error });
+    }
+
+    return NextResponse.json({ output: '', error: 'Engine failed to return a valid trace.' });
+
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Execution Sandbox Error:', err);
+    return NextResponse.json({ error: err.message || 'Internal sandbox error' }, { status: 500 });
   }
 }

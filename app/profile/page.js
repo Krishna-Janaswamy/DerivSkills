@@ -374,21 +374,7 @@ export default function ProfilePage() {
   }
 
   // ── States ───────────────────────────────────────────────────────────────────
-  if (status === 'loading') return (
-    <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-      <TechGenSpinner text="Loading session…" />
-    </main>
-  );
-
-  if (!session) return (
-    <main className="page-shell"><SignInGate /></main>
-  );
-
-  if (!isProfileReady) return (
-    <main className="page-shell" style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-      <TechGenSpinner text="Loading profile…" />
-    </main>
-  );
+  // Removed early full-page returns to allow the static page shell to SSR instantly.
 
   const isStudent = details.userType === 'student';
   const isProfessional = details.userType === 'professional';
@@ -419,230 +405,240 @@ export default function ProfilePage() {
 
   return (
     <main className="page-shell" style={{ maxWidth: 680, margin: '0 auto', padding: '2.5rem 0 5rem' }}>
-      <form onSubmit={handleSave} style={{ display: 'grid', gap: '1.25rem' }}>
-
-        {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <ProfileHero
-          session={session}
-          customName={customName}
-          presentRole={presentRole}
-          saveStatus={saveStatus}
-          progress={currentProgress}
-          onSignOut={() => signOut({ callbackUrl: '/' })}
-        />
-
-        {/* ── Tab bar ───────────────────────────────────────────────────── */}
-        <TabBar active={activeTab} onChange={setActiveTab} />
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* TAB: Identity                                                   */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'identity' && (
-          <>
-            <SectionCard title="Your name & role" subtitle="This is how you appear to others on the platform">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <Field label="Full Name">
-                    <input
-                      type="text" required value={customName}
-                      onChange={e => { setCustomName(e.target.value); setSaveStatus('unsaved'); }}
-                      style={inp}
-                    />
-                  </Field>
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <Field label="Email Address">
-                    <input type="email" value={session.user?.email || ''} disabled
-                      style={{ ...inp, background: 'var(--surface-strong)', cursor: 'not-allowed', opacity: 0.7 }} />
-                  </Field>
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <Field label="Target Role" optional>
-                    <input
-                      type="text" value={presentRole}
-                      onChange={e => { setPresentRole(e.target.value); setSaveStatus('unsaved'); }}
-                      style={inp}
-                    />
-                  </Field>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Are you a student or working?" subtitle="Choose the one that fits you — it changes what we ask next">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                {[
-                  { val: 'student', emoji: '🎓', label: 'Student', sub: 'Currently in college or university' },
-                  { val: 'professional', emoji: '💼', label: 'Working', sub: 'Employed or freelancing' },
-                ].map(opt => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => { setField('userType', opt.val); }}
-                    style={{
-                      padding: '1rem', borderRadius: '12px', border: '2px solid',
-                      borderColor: details.userType === opt.val ? 'var(--brand)' : 'var(--border)',
-                      background: details.userType === opt.val ? 'rgba(37,99,235,0.06)' : 'var(--surface-muted)',
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{opt.emoji}</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-color)' }}>{opt.label}</div>
-                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{opt.sub}</div>
-                  </button>
-                ))}
-              </div>
-            </SectionCard>
-          </>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* TAB: Background                                                 */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'background' && (
-          <>
-            {!details.userType && (
-              <div style={{
-                padding: '1.25rem', borderRadius: '12px', border: '1px dashed var(--border)',
-                background: 'var(--surface-muted)', color: 'var(--text-secondary)',
-                textAlign: 'center', fontSize: '0.9rem',
-              }}>
-                👆 First go to <strong>Your Info</strong> and tell us if you are a student or working — then come back here.
-              </div>
-            )}
-
-            {isStudent && (
-              <SectionCard title="College details" subtitle="Tell us a bit about where you are studying">
-                <Field label="College / University">
-                  <input type="text" value={details.collegeName} required
-                    onChange={e => setField('collegeName', e.target.value)}
-                    style={inp} />
-                </Field>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <Field label="Department / Stream">
-                    <input type="text" value={details.branch} required
-                      onChange={e => setField('branch', e.target.value)}
-                      style={inp} />
-                  </Field>
-                  <Field label="Current Year">
-                    <input type="text" value={details.studentYear} required
-                      onChange={e => setField('studentYear', e.target.value)}
-                      style={inp} />
-                  </Field>
-                </div>
-                <Field label="Batch / Section" optional>
-                  <input type="text" value={details.studentGroup}
-                    onChange={e => setField('studentGroup', e.target.value)}
-                    style={inp} />
-                </Field>
-              </SectionCard>
-            )}
-
-            {isProfessional && (
-              <SectionCard title="Where do you work?" subtitle="Your current job details">
-                <Field label="Company name">
-                  <input type="text" value={details.company} required
-                    onChange={e => setField('company', e.target.value)}
-                    style={inp} />
-                </Field>
-                <Field label="Years Of Experience">
-                  <select value={details.yearsExperience} required
-                    onChange={e => setField('yearsExperience', e.target.value)}
-                    style={{ ...inp, cursor: 'pointer' }}>
-                    <option value="">Choose one…</option>
-                    {['Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', '6 to 8 years', '9 to 12 years', 'More than 12 years'].map(o =>
-                      <option key={o} value={o}>{o}</option>
-                    )}
-                  </select>
-                </Field>
-              </SectionCard>
-            )}
-
-            <SectionCard title="Where did you hear about us?" subtitle="Just curious — helps us know where people find us">
-              <Field label="Where You Found Us" optional>
-                <select value={details.discoverySource}
-                  onChange={e => setField('discoverySource', e.target.value)}
-                  style={{ ...inp, cursor: 'pointer' }}>
-                  {SOURCE_OPTIONS.map(o => <option key={o} value={o}>{o || 'Choose one…'}</option>)}
-                </select>
-              </Field>
-            </SectionCard>
-          </>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* TAB: About                                                      */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'about' && (
-          <>
-            <SectionCard title="Your one-line intro" subtitle="Shown under your name — keep it short and to the point">
-              <Field label="One-Line Intro" optional>
-                <input type="text" value={details.headline}
-                  onChange={e => setField('headline', e.target.value)}
-                  style={inp} />
-              </Field>
-            </SectionCard>
-
-            <SectionCard title="About yourself" subtitle="A few lines about who you are and what you are working towards">
-              <Field label="About You" optional>
-                <textarea value={details.bio}
-                  onChange={e => setField('bio', e.target.value)}
-                  rows={4}
-                  style={{ ...inp, resize: 'vertical', lineHeight: 1.65 }} />
-                <p style={{ margin: '0.3rem 0 0', fontSize: '0.75rem', color: 'var(--muted)' }}>
-                  {details.bio.trim().split(/\s+/).filter(Boolean).length} words · aim for 40–80
-                </p>
-              </Field>
-            </SectionCard>
-
-            <SectionCard title="Where are you based?" subtitle="Your city and country — helps personalise your experience">
-              <Field label="City & Country" optional>
-                <input type="text" value={details.location}
-                  onChange={e => setField('location', e.target.value)}
-                  style={inp} />
-              </Field>
-            </SectionCard>
-          </>
-        )}
-
-        {/* ── Error banner ──────────────────────────────────────────────── */}
-        {profileError && (
-          <div style={{
-            padding: '0.85rem 1rem', borderRadius: '10px',
-            background: 'rgba(239,68,68,0.06)', color: '#b91c1c',
-            border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.88rem', fontWeight: 500,
-          }}>
-            ⚠️ {profileError}
-          </div>
-        )}
-
-        {/* ── Save button ───────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            type="submit"
-            disabled={saveStatus === 'saving'}
-            style={{
-              flex: 1, padding: '0.9rem 1.5rem', borderRadius: '12px', border: 'none',
-              background: saveSuccess ? '#10b981' : 'var(--brand)',
-              color: 'white', fontWeight: 700, fontSize: '0.95rem',
-              cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
-              opacity: saveStatus === 'saving' ? 0.8 : 1,
-              transition: 'background 0.3s, opacity 0.2s',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.22)',
-            }}
-          >
-            {saveSuccess ? '✓ Saved!' : saveStatus === 'saving' ? '⟳ Saving…' : 'Save Profile'}
-          </button>
-
-          {saveStatus === 'unsaved' && (
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-              You have unsaved changes
-            </span>
-          )}
+      {status === 'loading' || !isProfileReady ? (
+        <div style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
+          <TechGenSpinner text={status === 'loading' ? "Loading session…" : "Loading profile…"} />
         </div>
-      </form>
+      ) : !session ? (
+        <SignInGate />
+      ) : (
+        <>
+          <form onSubmit={handleSave} style={{ display: 'grid', gap: '1.25rem' }}>
 
-      {/* ── Resume Vault (feature-flagged) ──────────────────────────────── */}
-      {RESUME_ENABLED && <div style={{ marginTop: '2rem' }}><ResumeVault /></div>}
+            {/* ── Hero ──────────────────────────────────────────────────────── */}
+            <ProfileHero
+              session={session}
+              customName={customName}
+              presentRole={presentRole}
+              saveStatus={saveStatus}
+              progress={currentProgress}
+              onSignOut={() => signOut({ callbackUrl: '/' })}
+            />
+
+            {/* ── Tab bar ───────────────────────────────────────────────────── */}
+            <TabBar active={activeTab} onChange={setActiveTab} />
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB: Identity                                                   */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {activeTab === 'identity' && (
+              <>
+                <SectionCard title="Your name & role" subtitle="This is how you appear to others on the platform">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <Field label="Full Name">
+                        <input
+                          type="text" required value={customName}
+                          onChange={e => { setCustomName(e.target.value); setSaveStatus('unsaved'); }}
+                          style={inp}
+                        />
+                      </Field>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <Field label="Email Address">
+                        <input type="email" value={session.user?.email || ''} disabled
+                          style={{ ...inp, background: 'var(--surface-strong)', cursor: 'not-allowed', opacity: 0.7 }} />
+                      </Field>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <Field label="Target Role" optional>
+                        <input
+                          type="text" value={presentRole}
+                          onChange={e => { setPresentRole(e.target.value); setSaveStatus('unsaved'); }}
+                          style={inp}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </SectionCard>
+
+                <SectionCard title="Are you a student or working?" subtitle="Choose the one that fits you — it changes what we ask next">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                    {[
+                      { val: 'student', emoji: '🎓', label: 'Student', sub: 'Currently in college or university' },
+                      { val: 'professional', emoji: '💼', label: 'Working', sub: 'Employed or freelancing' },
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => { setField('userType', opt.val); }}
+                        style={{
+                          padding: '1rem', borderRadius: '12px', border: '2px solid',
+                          borderColor: details.userType === opt.val ? 'var(--brand)' : 'var(--border)',
+                          background: details.userType === opt.val ? 'rgba(37,99,235,0.06)' : 'var(--surface-muted)',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                        }}
+                      >
+                        <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{opt.emoji}</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-color)' }}>{opt.label}</div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{opt.sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </SectionCard>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB: Background                                                 */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {activeTab === 'background' && (
+              <>
+                {!details.userType && (
+                  <div style={{
+                    padding: '1.25rem', borderRadius: '12px', border: '1px dashed var(--border)',
+                    background: 'var(--surface-muted)', color: 'var(--text-secondary)',
+                    textAlign: 'center', fontSize: '0.9rem',
+                  }}>
+                    👆 First go to <strong>Your Info</strong> and tell us if you are a student or working — then come back here.
+                  </div>
+                )}
+
+                {isStudent && (
+                  <SectionCard title="College details" subtitle="Tell us a bit about where you are studying">
+                    <Field label="College / University">
+                      <input type="text" value={details.collegeName} required
+                        onChange={e => setField('collegeName', e.target.value)}
+                        style={inp} />
+                    </Field>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <Field label="Department / Stream">
+                        <input type="text" value={details.branch} required
+                          onChange={e => setField('branch', e.target.value)}
+                          style={inp} />
+                      </Field>
+                      <Field label="Current Year">
+                        <input type="text" value={details.studentYear} required
+                          onChange={e => setField('studentYear', e.target.value)}
+                          style={inp} />
+                      </Field>
+                    </div>
+                    <Field label="Batch / Section" optional>
+                      <input type="text" value={details.studentGroup}
+                        onChange={e => setField('studentGroup', e.target.value)}
+                        style={inp} />
+                    </Field>
+                  </SectionCard>
+                )}
+
+                {isProfessional && (
+                  <SectionCard title="Where do you work?" subtitle="Your current job details">
+                    <Field label="Company name">
+                      <input type="text" value={details.company} required
+                        onChange={e => setField('company', e.target.value)}
+                        style={inp} />
+                    </Field>
+                    <Field label="Years Of Experience">
+                      <select value={details.yearsExperience} required
+                        onChange={e => setField('yearsExperience', e.target.value)}
+                        style={{ ...inp, cursor: 'pointer' }}>
+                        <option value="">Choose one…</option>
+                        {['Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', '6 to 8 years', '9 to 12 years', 'More than 12 years'].map(o =>
+                          <option key={o} value={o}>{o}</option>
+                        )}
+                      </select>
+                    </Field>
+                  </SectionCard>
+                )}
+
+                <SectionCard title="Where did you hear about us?" subtitle="Just curious — helps us know where people find us">
+                  <Field label="Where You Found Us" optional>
+                    <select value={details.discoverySource}
+                      onChange={e => setField('discoverySource', e.target.value)}
+                      style={{ ...inp, cursor: 'pointer' }}>
+                      {SOURCE_OPTIONS.map(o => <option key={o} value={o}>{o || 'Choose one…'}</option>)}
+                    </select>
+                  </Field>
+                </SectionCard>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB: About                                                      */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {activeTab === 'about' && (
+              <>
+                <SectionCard title="Your one-line intro" subtitle="Shown under your name — keep it short and to the point">
+                  <Field label="One-Line Intro" optional>
+                    <input type="text" value={details.headline}
+                      onChange={e => setField('headline', e.target.value)}
+                      style={inp} />
+                  </Field>
+                </SectionCard>
+
+                <SectionCard title="About yourself" subtitle="A few lines about who you are and what you are working towards">
+                  <Field label="About You" optional>
+                    <textarea value={details.bio}
+                      onChange={e => setField('bio', e.target.value)}
+                      rows={4}
+                      style={{ ...inp, resize: 'vertical', lineHeight: 1.65 }} />
+                    <p style={{ margin: '0.3rem 0 0', fontSize: '0.75rem', color: 'var(--muted)' }}>
+                      {details.bio.trim().split(/\s+/).filter(Boolean).length} words · aim for 40–80
+                    </p>
+                  </Field>
+                </SectionCard>
+
+                <SectionCard title="Where are you based?" subtitle="Your city and country — helps personalise your experience">
+                  <Field label="City & Country" optional>
+                    <input type="text" value={details.location}
+                      onChange={e => setField('location', e.target.value)}
+                      style={inp} />
+                  </Field>
+                </SectionCard>
+              </>
+            )}
+
+            {/* ── Error banner ──────────────────────────────────────────────── */}
+            {profileError && (
+              <div style={{
+                padding: '0.85rem 1rem', borderRadius: '10px',
+                background: 'rgba(239,68,68,0.06)', color: '#b91c1c',
+                border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.88rem', fontWeight: 500,
+              }}>
+                ⚠️ {profileError}
+              </div>
+            )}
+
+            {/* ── Save button ───────────────────────────────────────────────── */}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                type="submit"
+                disabled={saveStatus === 'saving'}
+                style={{
+                  flex: 1, padding: '0.9rem 1.5rem', borderRadius: '12px', border: 'none',
+                  background: saveSuccess ? '#10b981' : 'var(--brand)',
+                  color: 'white', fontWeight: 700, fontSize: '0.95rem',
+                  cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
+                  opacity: saveStatus === 'saving' ? 0.8 : 1,
+                  transition: 'background 0.3s, opacity 0.2s',
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.22)',
+                }}
+              >
+                {saveSuccess ? '✓ Saved!' : saveStatus === 'saving' ? '⟳ Saving…' : 'Save Profile'}
+              </button>
+
+              {saveStatus === 'unsaved' && (
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  You have unsaved changes
+                </span>
+              )}
+            </div>
+          </form>
+
+          {/* ── Resume Vault (feature-flagged) ──────────────────────────────── */}
+          {RESUME_ENABLED && <div style={{ marginTop: '2rem' }}><ResumeVault /></div>}
+        </>
+      )}
     </main>
   );
 }
