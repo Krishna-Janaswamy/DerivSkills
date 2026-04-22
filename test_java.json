@@ -1,0 +1,1 @@
+{"code": "public class Main {\n  public static void main(String[] args) {\n    int a = 5;\n  }\n}", "language": "java"}
