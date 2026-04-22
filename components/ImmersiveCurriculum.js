@@ -261,8 +261,6 @@ export function ImmersiveCurriculum({ role }) {
     }
   }
 
-  if (!isLoaded) return <div style={{ height: '50vh', display: 'grid', placeItems: 'center'}}><TechGenSpinner text="Loading Learning Map..." /></div>;
-
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 80px)', background: 'var(--bg-color)', width: '100vw', margin: '0 calc(-50vw + 50%)', position: 'relative' }}>
       
@@ -284,7 +282,11 @@ export function ImmersiveCurriculum({ role }) {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.4, margin: 0 }}>{role.summary}</p>
           
           <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {isActiveTrack ? (
+            {!isLoaded ? (
+              <div style={{ width: '100%', padding: '0.75rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '6px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem', opacity: 0.7 }}>
+                Syncing Profile...
+              </div>
+            ) : isActiveTrack ? (
               <>
                 <button 
                   onClick={() => router.push('/my-learning')}
