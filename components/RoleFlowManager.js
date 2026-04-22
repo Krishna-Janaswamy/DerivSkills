@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { SkillTreeTimeline } from './SkillTreeTimeline';
+import { InteractiveRoadmap } from './InteractiveRoadmap';
 import { TechGenSpinner } from './TechGenSpinner';
 import { useCloudSync } from './Providers';
 
@@ -21,7 +21,7 @@ export function RoleFlowManager({ role }) {
       priorities: ['Consistency', 'Focus on Outcomes'],
       firstSteps: ['Review the first module', 'Set a study schedule'],
       weeklyPlan: role.roadmap.map(node => ({
-        phase: node.title,
+        phase: node.phaseGroup || node.title,
         duration: node.duration,
         focus: node.title,
         outcome: `Complete all ${node.outcomes.length} core subtopics for this module.`,
@@ -107,8 +107,8 @@ export function RoleFlowManager({ role }) {
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11, 15, 25, 0.1), rgba(11, 15, 25, 0.9) 80%)', zIndex: 5 }} />
         )}
         
-        <section className="timeline-card" style={{ padding: '2rem 0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-          <SkillTreeTimeline roadmap={role.roadmap} roleTitle={role.title} roleId={role.id} />
+        <section style={{ padding: '2rem 0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
+          <InteractiveRoadmap roadmap={role.roadmap} roleTitle={role.title} roleId={role.id} />
         </section>
       </div>
     </div>

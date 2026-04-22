@@ -60,7 +60,7 @@ const TOPIC_DETAIL_OPENAI_SCHEMA = {
 
 export async function POST(request) {
   const guard = await withSecurity(request, {
-    auth:      true,
+    auth:      false,
     rateLimit: { limit: 10, window: 60, prefix: 'rl:topic:' },
     schema: {
       topic:     { type: 'string', required: true, minLength: 1, maxLength: 200 },

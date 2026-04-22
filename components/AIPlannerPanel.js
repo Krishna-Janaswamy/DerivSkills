@@ -119,7 +119,6 @@ export function AIPlannerPanel() {
             <span>Career goal</span>
             <textarea
               rows="4"
-              placeholder="Example: I want to switch from frontend to LLM engineering in 6 months."
               value={form.goal}
               onChange={(event) => updateField('goal', event.target.value)}
               style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-color)' }}
@@ -130,7 +129,6 @@ export function AIPlannerPanel() {
             <span>Current background</span>
             <textarea
               rows="5"
-              placeholder="Share your current skills, projects, strengths, or gaps."
               value={form.background}
               onChange={(event) => updateField('background', event.target.value)}
               style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-color)' }}

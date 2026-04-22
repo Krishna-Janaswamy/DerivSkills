@@ -16,7 +16,7 @@ const DEFAULT_FORM = {
 
 const inp = {
   width: '100%', padding: '10px 13px', borderRadius: '8px',
-  border: '1px solid var(--border-color)', background: 'var(--surface-muted)',
+  border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)',
   color: 'var(--text-color)', fontSize: '0.93rem', fontFamily: 'inherit',
   boxSizing: 'border-box', outline: 'none',
 };

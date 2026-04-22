@@ -102,10 +102,10 @@ export default function MyLearningPage() {
           <div style={{ background: 'var(--surface-color)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <p className="section-kicker" style={{ margin: '0 0 0.8rem 0' }}>Learning Analytics Board</p>
             <h2 className="page-title" style={{ margin: '0 0 0.8rem 0', fontSize: '1.8rem' }}>
-              Your entire skill track progress is syncing transparently with PostgreSQL.
+              Track your career progress in real-time.
             </h2>
             <p className="page-subtitle" style={{ margin: 0, fontSize: '1rem', lineHeight: 1.6 }}>
-              Any changes made here are bound natively to Javascript memory, avoiding disk I/O, and automatically batch synchronized directly back to your secure Cloud Profile.
+              Every subtopic you finish and every hour you track is automatically saved to your profile.
             </p>
           </div>
 

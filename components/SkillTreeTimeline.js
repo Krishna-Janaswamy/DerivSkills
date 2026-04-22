@@ -30,7 +30,35 @@ export function SkillTreeTimeline({ roadmap, roleTitle, roleId }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem', position: 'relative', zIndex: 1 }}>
         {roadmap.map((module, phaseIdx) => (
-          <TreeNode key={phaseIdx} module={module} roleTitle={roleTitle} roleId={roleId} />
+          <div key={phaseIdx} style={{ display: 'contents' }}>
+            {module.phaseGroup && (
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                justifyContent: 'center',
+                margin: '4rem 0 2rem 0',
+                zIndex: 10
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                  border: '1px solid var(--brand)',
+                  color: 'white',
+                  padding: '16px 48px',
+                  borderRadius: '16px',
+                  fontWeight: 900,
+                  fontSize: '1.4rem',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  textAlign: 'center'
+                }}>
+                  {module.phaseGroup}
+                </div>
+              </div>
+            )}
+            <TreeNode module={module} roleTitle={roleTitle} roleId={roleId} />
+          </div>
         ))}
       </div>
       

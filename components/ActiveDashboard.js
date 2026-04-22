@@ -53,14 +53,34 @@ export function ActiveDashboard({ plan, onClear }) {
             </p>
           </div>
 
-          <button
-            onClick={onClear}
-            style={{ padding: '0.6rem 1rem', background: 'transparent', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, transition: 'all 0.2s' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            Discard Plan
-          </button>
+          <div style={{ display: 'flex', gap: '0.8rem' }}>
+            <button
+              onClick={() => {
+                const percent = Math.floor(analytics.progressPercent);
+                const shareText = `I've reached ${percent}% completion on my ${plan.roleTitle} learning track using the DerivSkills Learning Dashboard! Continuous learning in progress. 🚀`;
+                if (navigator.share) {
+                  navigator.share({
+                    title: 'My Learning Progress',
+                    text: shareText,
+                    url: window.location.origin,
+                  }).catch(() => {});
+                } else {
+                  window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText + '\n\nCheck it out at ' + window.location.origin)}`, '_blank');
+                }
+              }}
+              style={{ padding: '0.6rem 1.2rem', background: 'linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, boxShadow: '0 2px 8px rgba(91,140,255,0.2)' }}
+            >
+              Share Progress
+            </button>
+            <button
+              onClick={onClear}
+              style={{ padding: '0.6rem 1rem', background: 'transparent', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, transition: 'all 0.2s' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              Discard Plan
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem', alignItems: 'center' }}>
