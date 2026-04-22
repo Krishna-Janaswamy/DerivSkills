@@ -43,6 +43,7 @@ function FieldLabel({ children, optional }) {
       color: 'var(--text-secondary)', marginBottom: '0.4rem',
     }}>
       {children}
+      {!optional && <span style={{ marginLeft: '0.2rem', color: '#ef4444' }}>*</span>}
       {optional && <span style={{ marginLeft: '0.4rem', fontWeight: 400, opacity: 0.6, textTransform: 'none', letterSpacing: 0 }}>optional</span>}
     </label>
   );
@@ -138,7 +139,7 @@ function ProfileHero({ session, customName, presentRole, saveStatus, onSignOut }
       {/* Avatar */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         {session?.user?.image
-          ? <img src={session.user.image} alt="Avatar"
+          ? <img src={session.user.image} alt="Avatar" referrerPolicy="no-referrer"
             style={{
               width: 72, height: 72, borderRadius: '50%', objectFit: 'cover',
               border: '3px solid var(--brand)', boxShadow: '0 0 0 4px rgba(37,99,235,0.12)'
@@ -309,7 +310,7 @@ export default function ProfilePage() {
     }
     load();
     return () => { ignore = true; };
-  }, [session, status]);
+  }, [userId]);
 
   // ── Field helpers ────────────────────────────────────────────────────────────
   function setField(key, val) {
@@ -392,7 +393,6 @@ export default function ProfilePage() {
                     <input
                       type="text" required value={customName}
                       onChange={e => { setCustomName(e.target.value); setSaveStatus('unsaved'); }}
-                      placeholder="Rahul Sharma"
                       style={inp}
                     />
                   </Field>
@@ -408,7 +408,6 @@ export default function ProfilePage() {
                     <input
                       type="text" value={presentRole}
                       onChange={e => { setPresentRole(e.target.value); setSaveStatus('unsaved'); }}
-                      placeholder="Backend Developer, Data Analyst, DevOps Engineer…"
                       style={inp}
                     />
                   </Field>
@@ -461,26 +460,26 @@ export default function ProfilePage() {
             {isStudent && (
               <SectionCard title="College details" subtitle="Tell us a bit about where you are studying">
                 <Field label="College / University">
-                  <input type="text" value={details.collegeName}
+                  <input type="text" value={details.collegeName} required
                     onChange={e => setField('collegeName', e.target.value)}
-                    placeholder="Anna University, VIT, BITS Pilani…" style={inp} />
+                    style={inp} />
                 </Field>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <Field label="Department / Stream">
-                    <input type="text" value={details.branch}
+                    <input type="text" value={details.branch} required
                       onChange={e => setField('branch', e.target.value)}
-                      placeholder="Computer Science, Electronics…" style={inp} />
+                      style={inp} />
                   </Field>
                   <Field label="Current Year">
-                    <input type="text" value={details.studentYear}
+                    <input type="text" value={details.studentYear} required
                       onChange={e => setField('studentYear', e.target.value)}
-                      placeholder="2nd Year, Final Year…" style={inp} />
+                      style={inp} />
                   </Field>
                 </div>
                 <Field label="Batch / Section" optional>
                   <input type="text" value={details.studentGroup}
                     onChange={e => setField('studentGroup', e.target.value)}
-                    placeholder="Batch 2025, Section A…" style={inp} />
+                    style={inp} />
                 </Field>
               </SectionCard>
             )}
@@ -488,12 +487,12 @@ export default function ProfilePage() {
             {isProfessional && (
               <SectionCard title="Where do you work?" subtitle="Your current job details">
                 <Field label="Company name">
-                  <input type="text" value={details.company}
+                  <input type="text" value={details.company} required
                     onChange={e => setField('company', e.target.value)}
-                    placeholder="Infosys, TCS, Razorpay, your startup…" style={inp} />
+                    style={inp} />
                 </Field>
                 <Field label="Years Of Experience">
-                  <select value={details.yearsExperience}
+                  <select value={details.yearsExperience} required
                     onChange={e => setField('yearsExperience', e.target.value)}
                     style={{ ...inp, cursor: 'pointer' }}>
                     <option value="">Choose one…</option>
@@ -526,7 +525,6 @@ export default function ProfilePage() {
               <Field label="One-Line Intro" optional>
                 <input type="text" value={details.headline}
                   onChange={e => setField('headline', e.target.value)}
-                  placeholder="Final year CSE student aiming for backend roles at product companies"
                   style={inp} />
               </Field>
             </SectionCard>
@@ -536,7 +534,6 @@ export default function ProfilePage() {
                 <textarea value={details.bio}
                   onChange={e => setField('bio', e.target.value)}
                   rows={4}
-                  placeholder="I am a 3rd year CS student from Chennai who loves building APIs and learning distributed systems. Currently preparing for product company interviews."
                   style={{ ...inp, resize: 'vertical', lineHeight: 1.65 }} />
                 <p style={{ margin: '0.3rem 0 0', fontSize: '0.75rem', color: 'var(--muted)' }}>
                   {details.bio.trim().split(/\s+/).filter(Boolean).length} words · aim for 40–80
@@ -548,7 +545,6 @@ export default function ProfilePage() {
               <Field label="City & Country" optional>
                 <input type="text" value={details.location}
                   onChange={e => setField('location', e.target.value)}
-                  placeholder="Chennai, India"
                   style={inp} />
               </Field>
             </SectionCard>
