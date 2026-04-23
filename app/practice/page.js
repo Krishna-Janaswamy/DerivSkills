@@ -14,6 +14,41 @@ export default function PracticePage() {
 
   const textareaRef = useRef(null);
 
+  // Helper to parse markdown blocks and auto-detect language
+  const processInitialCode = (rawCode, rawLang) => {
+    if (!rawCode) return { code: '', lang: rawLang || 'javascript' };
+    
+    let finalCode = rawCode;
+    let finalLang = rawLang;
+
+    // Strip markdown wrappers (e.g. ```java ... ```)
+    const match = finalCode.match(/```([a-z]*)\n([\s\S]*?)```/);
+    if (match) {
+      if (match[1] && !finalLang) {
+        finalLang = match[1].toLowerCase();
+      }
+      finalCode = match[2].trim();
+    }
+
+    // Heuristics for language detection if still unknown or default
+    if (!finalLang || finalLang === 'javascript' || finalLang === 'js') {
+      if (finalCode.includes('public static void main') || finalCode.includes('System.out.println') || finalCode.includes('import java.')) {
+        finalLang = 'java';
+      } else if (finalCode.includes('def ') || finalCode.includes('print(') || finalCode.includes('import sys')) {
+        finalLang = 'python';
+      } else if (finalCode.includes('#include') || finalCode.includes('int main()')) {
+        finalLang = finalCode.includes('cout') || finalCode.includes('std::') || finalCode.includes('#include <iostream>') ? 'cpp' : 'c';
+      }
+    }
+
+    // Normalize common markdown identifiers to our select options
+    if (finalLang === 'js' || finalLang === 'node') finalLang = 'javascript';
+    if (finalLang === 'py') finalLang = 'python';
+    if (finalLang === 'c++') finalLang = 'cpp';
+
+    return { code: finalCode, lang: finalLang || 'javascript' };
+  };
+
   // Sync initial state if URL params change or load from sessionStorage
   useEffect(() => {
     let urlCode = null;
@@ -24,32 +59,111 @@ export default function PracticePage() {
       urlLang = params.get('lang');
     }
     
-    if (urlCode) {
-      setCode(urlCode);
-    } else {
-      const storedCode = sessionStorage.getItem('ide_initial_code');
-      const vizCode = sessionStorage.getItem('derivskills_viz_code');
-      if (storedCode) {
-        setCode(storedCode);
-        sessionStorage.removeItem('ide_initial_code');
-      } else if (vizCode) {
-        setCode(vizCode);
-      }
+    const storedCode = sessionStorage.getItem('ide_initial_code');
+    const vizCode = sessionStorage.getItem('derivskills_viz_code');
+    const sourceCode = urlCode || storedCode || vizCode;
+    
+    const storedLang = sessionStorage.getItem('ide_initial_lang');
+    const vizLang = sessionStorage.getItem('derivskills_viz_lang');
+    const sourceLang = urlLang || storedLang || vizLang;
+
+    if (sourceCode) {
+      const { code: cleanCode, lang: detectedLang } = processInitialCode(sourceCode, sourceLang);
+      setCode(cleanCode);
+      setLanguage(detectedLang);
+    } else if (sourceLang) {
+      setLanguage(sourceLang);
     }
 
-    if (urlLang) {
-      setLanguage(urlLang);
-    } else {
-      const storedLang = sessionStorage.getItem('ide_initial_lang');
-      const vizLang = sessionStorage.getItem('derivskills_viz_lang');
-      if (storedLang) {
-        setLanguage(storedLang);
-        sessionStorage.removeItem('ide_initial_lang');
-      } else if (vizLang) {
-        setLanguage(vizLang);
+    if (storedCode) sessionStorage.removeItem('ide_initial_code');
+    if (storedLang) sessionStorage.removeItem('ide_initial_lang');
+  }, []);
+
+  const handleFormatCode = () => {
+    if (!code) return;
+    
+    let rawCode = code;
+    let newLang = language;
+    
+    // Auto-strip markdown wrappers if the user pasted them directly and hit format
+    const match = rawCode.match(/```([a-z]*)\n([\s\S]*?)```/);
+    if (match) {
+      rawCode = match[2].trim();
+      if (match[1]) newLang = match[1].toLowerCase();
+      if (newLang === 'js' || newLang === 'node') newLang = 'javascript';
+      if (newLang === 'py') newLang = 'python';
+      if (newLang === 'c++') newLang = 'cpp';
+      if (['javascript', 'python', 'java', 'c', 'cpp'].includes(newLang)) {
+        setLanguage(newLang);
       }
     }
-  }, []);
+    
+    if (newLang === 'python' || rawCode.match(/def |print\(|import sys/)) {
+      // Python: Just trim trailing whitespaces
+      setCode(rawCode.split('\n').map(line => line.trimEnd()).join('\n'));
+      return;
+    }
+    
+    // C / C++ / Java / JS Robust Auto-Indenter
+    let inString = false;
+    let inChar = false;
+    let inLineComment = false;
+    let inBlockComment = false;
+    let parenDepth = 0;
+    let res = '';
+
+    for (let i = 0; i < rawCode.length; i++) {
+      let c = rawCode[i];
+      let next = rawCode[i + 1] || '';
+      let prev = i > 0 ? rawCode[i - 1] : '';
+
+      if (!inString && !inChar && !inLineComment && !inBlockComment) {
+        if (c === '/' && next === '/') { inLineComment = true; res += c; continue; }
+        if (c === '/' && next === '*') { inBlockComment = true; res += c; continue; }
+        if (c === '"' && prev !== '\\') { inString = true; res += c; continue; }
+        if (c === "'" && prev !== '\\') { inChar = true; res += c; continue; }
+
+        if (c === '(') { parenDepth++; res += c; continue; }
+        if (c === ')') { parenDepth = Math.max(0, parenDepth - 1); res += c; continue; }
+
+        if (c === '{') { res += '{\n'; continue; }
+        if (c === '}') { res += '\n}\n'; continue; }
+        if (c === ';') {
+          res += parenDepth === 0 ? ';\n' : ';';
+          continue;
+        }
+      } else {
+        if (inLineComment && c === '\n') inLineComment = false;
+        if (inBlockComment && c === '*' && next === '/') { inBlockComment = false; res += c; i++; res += '/'; continue; }
+        if (inString && c === '"' && prev !== '\\') inString = false;
+        if (inChar && c === "'" && prev !== '\\') inChar = false;
+      }
+      res += c;
+    }
+
+    let formatted = res.replace(/\r\n/g, '\n').split('\n').map(line => line.trim()).filter(line => line).join('\n');
+    let indentLevel = 0;
+    let lines = formatted.split('\n');
+    let result = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const openBraces = (line.match(/\{/g) || []).length;
+      const closeBraces = (line.match(/\}/g) || []).length;
+      
+      // If line starts with closing brace, indent it one level less visually
+      if (line.match(/^}/)) {
+        result.push('  '.repeat(Math.max(0, indentLevel - 1)) + line);
+      } else {
+        result.push('  '.repeat(indentLevel) + line);
+      }
+      
+      indentLevel += (openBraces - closeBraces);
+      if (indentLevel < 0) indentLevel = 0;
+    }
+    
+    setCode(result.join('\n'));
+  };
 
   const handleVisualize = () => {
     sessionStorage.setItem('derivskills_viz_code', code);
@@ -62,13 +176,21 @@ export default function PracticePage() {
     setOutput('');
     setErrorMsg('');
     
+    // Safety check: strip markdown before executing if somehow still present
+    let executableCode = code;
+    const match = executableCode.match(/```[a-z]*\n([\s\S]*?)```/);
+    if (match) {
+      executableCode = match[1].trim();
+      setCode(executableCode);
+    }
+    
     try {
       const res = await fetch('/api/run-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ language, code })
+        body: JSON.stringify({ language, code: executableCode })
       });
       
       const data = await res.json();
@@ -101,6 +223,47 @@ export default function PracticePage() {
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2;
+        }
+      }, 0);
+    }
+  };
+
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (!pastedText) return;
+
+    // Check if pasted text is wrapped in markdown blocks
+    const match = pastedText.match(/```([a-z]*)\n([\s\S]*?)```/);
+    if (match) {
+      e.preventDefault();
+      const rawLang = match[1].toLowerCase();
+      const cleanCode = match[2].trim();
+      
+      // Auto update language
+      let newLang = rawLang;
+      if (newLang === 'js' || newLang === 'node') newLang = 'javascript';
+      if (newLang === 'py') newLang = 'python';
+      if (newLang === 'c++') newLang = 'cpp';
+      
+      if (!newLang) {
+        if (cleanCode.includes('public static void main') || cleanCode.includes('import java.')) newLang = 'java';
+        else if (cleanCode.includes('def ') || cleanCode.includes('print(')) newLang = 'python';
+        else if (cleanCode.includes('#include')) newLang = cleanCode.includes('cout') ? 'cpp' : 'c';
+      }
+      
+      if (['javascript', 'python', 'java', 'c', 'cpp'].includes(newLang)) {
+        setLanguage(newLang);
+      }
+      
+      // Insert clean code at cursor position
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const newCode = code.substring(0, start) + cleanCode + code.substring(end);
+      setCode(newCode);
+      
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + cleanCode.length;
         }
       }, 0);
     }
@@ -163,6 +326,33 @@ export default function PracticePage() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleFormatCode}
+            disabled={!code.trim() || language === 'python'}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-color)',
+              border: '1px solid var(--border-color)',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              cursor: !code.trim() || language === 'python' ? 'not-allowed' : 'pointer',
+              opacity: !code.trim() || language === 'python' ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
+            onMouseEnter={e => { if (code.trim() && language !== 'python') e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            title={language === 'python' ? 'Formatting disabled for Python to prevent indentation errors' : 'Auto-format code'}
+          >
+            🪄 Format
+          </button>
+
           <button
             onClick={handleVisualize}
             disabled={!code.trim()}
@@ -255,6 +445,7 @@ export default function PracticePage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               spellCheck={false}
               style={{
                 width: '100%',
