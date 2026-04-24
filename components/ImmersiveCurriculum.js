@@ -189,36 +189,50 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                     <div style={{ position: 'relative' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.5rem 0' }}>
                         <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Practical Illustration</h4>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            let detectedLang = 'python';
-                            const codeStr = detail.illustration || detail.example || '';
-                            if (codeStr.includes('public class') || codeStr.includes('System.out.print')) detectedLang = 'java';
-                            else if (codeStr.includes('console.log') || codeStr.includes('const ') || codeStr.includes('let ')) detectedLang = 'javascript';
-                            
-                            sessionStorage.setItem('ide_initial_code', codeStr);
-                            sessionStorage.setItem('ide_initial_lang', detectedLang);
-                            window.open('/practice', '_blank');
-                          }}
-                          style={{
-                            background: 'linear-gradient(135deg, var(--brand), var(--accent))',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 10px rgba(91,140,255,0.2)',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <span style={{ fontSize: '1rem' }}>💻</span> Practice in IDE
-                        </button>
+                        {(() => {
+                           const codeStr = detail.illustration || detail.example || '';
+                           if (!codeStr) return null;
+                           
+                           const t = codeStr.toLowerCase();
+                           const hasCodeSyntax = t.includes('```') || t.includes('public class') || t.includes('system.out') || t.includes('console.log') || t.includes('function ') || t.includes('const ') || t.includes('let ') || t.includes('def ') || t.includes('print(') || t.includes('import ') || t.includes('#include') || t.includes('int main') || t.includes('return ') || t.includes('class ') || t.includes('var ') || t.includes('for(') || t.includes('for ');
+                           const hasBraces = (codeStr.match(/[{}]/g) || []).length >= 2;
+                           const hasSemis = (codeStr.match(/;/g) || []).length >= 2;
+                           const isLikelyCode = hasCodeSyntax || hasBraces || hasSemis;
+                           
+                           if (!isLikelyCode) return null;
+                           
+                           return (
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 let detectedLang = 'python';
+                                 if (codeStr.includes('public class') || codeStr.includes('System.out.print')) detectedLang = 'java';
+                                 else if (codeStr.includes('console.log') || codeStr.includes('const ') || codeStr.includes('let ')) detectedLang = 'javascript';
+                                 
+                                 sessionStorage.setItem('ide_initial_code', codeStr);
+                                 sessionStorage.setItem('ide_initial_lang', detectedLang);
+                                 window.open('/practice', '_blank');
+                               }}
+                               style={{
+                                 background: 'linear-gradient(135deg, var(--brand), var(--accent))',
+                                 color: 'white',
+                                 border: 'none',
+                                 borderRadius: '6px',
+                                 padding: '6px 12px',
+                                 fontSize: '0.75rem',
+                                 fontWeight: 700,
+                                 cursor: 'pointer',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: '6px',
+                                 boxShadow: '0 2px 10px rgba(91,140,255,0.2)',
+                                 transition: 'all 0.2s'
+                               }}
+                             >
+                               <span style={{ fontSize: '1rem' }}>💻</span> Practice in IDE
+                             </button>
+                           );
+                        })()}
                       </div>
                       <div style={{ margin: 0, fontSize: '1rem', lineHeight: 1.7, background: '#0f1117', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', borderLeft: '4px solid var(--brand)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', color: '#e2e8f0', overflowX: 'auto' }}>
                         {detail.illustration || detail.example}
