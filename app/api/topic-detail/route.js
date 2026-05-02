@@ -3,6 +3,9 @@ import { prisma }         from '@/lib/prisma';
 import { generateStructuredJson } from '@/lib/ai';
 import { errorResponse, rateLimit, validateBody } from '@/lib/api-security';
 import { getFromCache, setInCache } from '@/lib/cache';
+import { ALL_PROBLEMS_DICTIONARY } from '@/src/data/all_problems';
+import { STAGE3_FULL_CODE } from '@/src/data/stage3_full_code';
+import { STAGE4_FULL_CODE } from '@/src/data/stage4_full_code';
 
 
 const TOPIC_DETAIL_SCHEMA = {
@@ -44,6 +47,11 @@ const TOPIC_DETAIL_BODY_SCHEMA = {
   roleTitle: { type: 'string', required: true, minLength: 1, maxLength: 100 },
   context:   { type: 'string', required: false, maxLength: 500 },
 };
+
+const HARDCODED_FULL_CODE_KEYS = new Set([
+  ...Object.keys(STAGE3_FULL_CODE),
+  ...Object.keys(STAGE4_FULL_CODE),
+]);
 
 function normalizeCachePart(value) {
   return String(value || '')
@@ -135,6 +143,21 @@ const TOPIC_DETAIL_OPENAI_SCHEMA = {
   required: ['definition', 'descriptionPoints', 'usagePoints', 'example', 'illustration'],
 };
 
+function buildCodeByLanguage(problem) {
+  if (!problem) return null;
+
+  const languages = ['javascript', 'python', 'java', 'cpp'];
+  const codeByLanguage = {};
+
+  for (const language of languages) {
+    if (typeof problem[language] === 'string' && problem[language].trim()) {
+      codeByLanguage[language] = problem[language];
+    }
+  }
+
+  return Object.keys(codeByLanguage).length ? codeByLanguage : null;
+}
+
 export async function POST(request) {
   const startedAt = Date.now();
 
@@ -155,7 +178,25 @@ export async function POST(request) {
 
   const { topic, context, roleTitle } = body;
 
+
+
   try {
+    // Unified fast-path check for ANY top algorithm problem
+    const match = Object.keys(ALL_PROBLEMS_DICTIONARY).find(k => topic.includes(k) || k.includes(topic));
+    const isHardcodedTopic = match && HARDCODED_FULL_CODE_KEYS.has(match);
+    if ((context?.includes('Top') || context?.includes('Problems') || topic?.match(/^\d+\./) || isHardcodedTopic) && match) {
+      const problem = ALL_PROBLEMS_DICTIONARY[match];
+      return responseWithMeta({
+        isCodeOnly: true,
+        definition: '',
+        descriptionPoints: [],
+        usagePoints: [],
+        example: '',
+        illustration: problem.javascript,
+        codeByLanguage: buildCodeByLanguage(problem),
+      }, 'hardcoded', startedAt);
+    }
+
     const normalizedRole = normalizeCachePart(roleTitle);
     const normalizedTopic = normalizeCachePart(topic);
     const topicHash = `${normalizedRole}_${normalizedTopic}`;

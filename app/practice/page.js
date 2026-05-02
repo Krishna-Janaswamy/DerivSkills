@@ -171,6 +171,53 @@ export default function PracticePage() {
     router.push('/practice/visualization');
   };
 
+  const handleReview = async () => {
+    setIsRunning(true);
+    setOutput('Analyzing code...');
+    setErrorMsg('');
+    
+    let executableCode = code;
+    const match = executableCode.match(/```[a-z]*\n([\s\S]*?)```/);
+    if (match) {
+      executableCode = match[1].trim();
+      setCode(executableCode);
+    }
+    
+    try {
+      const res = await fetch('/api/agents/code-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language, code: executableCode })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Code review failed');
+      }
+      
+      let reviewText = `📊 Code Review Summary\n${'-'.repeat(40)}\n${data.summary}\n\n`;
+      reviewText += `⏱ Complexity:\n• Time: ${data.timeComplexity}\n• Space: ${data.spaceComplexity}\n\n`;
+      
+      if (data.issues && data.issues.length > 0) {
+        reviewText += `🚨 Issues Found:\n${data.issues.map(i => `• ${i}`).join('\n')}\n\n`;
+      } else {
+        reviewText += `✅ No major issues found.\n\n`;
+      }
+      
+      if (data.improvements && data.improvements.length > 0) {
+        reviewText += `💡 Suggested Improvements:\n${data.improvements.map(i => `• ${i}`).join('\n')}\n`;
+      }
+      
+      setOutput(reviewText);
+    } catch (err) {
+      setErrorMsg(err.message);
+      setOutput('');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   const handleRun = async () => {
     setIsRunning(true);
     setOutput('');
@@ -269,6 +316,34 @@ export default function PracticePage() {
     }
   };
 
+  const handleLanguageChange = async (e) => {
+    const newLang = e.target.value;
+    const oldLang = language;
+    setLanguage(newLang);
+    
+    if (code.trim()) {
+      setIsRunning(true);
+      setOutput('Translating code to ' + newLang + '...');
+      setErrorMsg('');
+      try {
+        const res = await fetch('/api/translate-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceCode: code, sourceLang: oldLang, targetLang: newLang })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Translation failed');
+        setCode(data.translatedCode);
+        setOutput('Translation successful! Ready to run.');
+      } catch (err) {
+        setErrorMsg('Failed to translate code: ' + err.message);
+        setOutput('');
+      } finally {
+        setIsRunning(false);
+      }
+    }
+  };
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -303,7 +378,7 @@ export default function PracticePage() {
           <div style={{ height: '24px', width: '1px', background: 'var(--border-color)' }} />
           <select 
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={handleLanguageChange}
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid var(--border-color)',
@@ -377,6 +452,32 @@ export default function PracticePage() {
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             👁 Visualize
+          </button>
+
+          <button
+            onClick={handleReview}
+            disabled={isRunning || !code.trim()}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-color)',
+              border: '1px solid var(--border-color)',
+              padding: '10px 24px',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              cursor: isRunning || !code.trim() ? 'not-allowed' : 'pointer',
+              opacity: isRunning || !code.trim() ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
+            onMouseEnter={e => { if (!isRunning && code.trim()) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            🤖 Review
           </button>
 
           <button 

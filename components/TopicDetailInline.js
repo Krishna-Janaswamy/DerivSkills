@@ -5,12 +5,26 @@ import { createPortal } from 'react-dom';
 import { useCloudSync } from './Providers';
 import { getSubtopicKey } from '@/src/utils/progress';
 
+const CODE_LANGUAGES = [
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'cpp', label: 'C++' },
+];
+
+function isPlaceholderCode(code = '') {
+  return /Placeholder for:|function execute\(\)\s*\{\s*console\.log\("Placeholder/i.test(code);
+}
+
 export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [detail, setDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [displayCode, setDisplayCode] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
   const { learningData, triggerSync, isLoaded } = useCloudSync();
 
   useEffect(() => {
@@ -77,10 +91,69 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
       if (!response.ok) throw new Error(data.error);
 
       setDetail(data.detail);
+      setSelectedLanguage('javascript');
+      setDisplayCode(data.detail?.illustration || '');
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!detail) return;
+    if (!detail.isCodeOnly) {
+      setDisplayCode(detail.illustration || detail.example || '');
+      return;
+    }
+
+    const initialCode = detail.codeByLanguage?.javascript || detail.illustration || '';
+    setDisplayCode(initialCode);
+    setSelectedLanguage('javascript');
+  }, [detail]);
+
+  async function handleLanguageChange(e) {
+    const newLanguage = e.target.value;
+    setSelectedLanguage(newLanguage);
+
+    if (!detail?.isCodeOnly) return;
+
+    const sourceCode = detail.codeByLanguage?.javascript || detail.illustration || '';
+    if (!sourceCode) return;
+
+    if (newLanguage === 'javascript') {
+      setDisplayCode(sourceCode);
+      return;
+    }
+
+    const staticCode = detail.codeByLanguage?.[newLanguage];
+    if (staticCode && !isPlaceholderCode(staticCode)) {
+      setDisplayCode(staticCode);
+      return;
+    }
+
+    setIsTranslating(true);
+    setError('');
+    try {
+      const response = await fetch('/api/translate-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceCode,
+          sourceLang: 'javascript',
+          targetLang: newLanguage,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Translation failed');
+      setDisplayCode(data.translatedCode);
+    } catch (err) {
+      setError(err.message || 'Translation failed');
+      setDisplayCode(sourceCode);
+      setSelectedLanguage('javascript');
+    } finally {
+      setIsTranslating(false);
     }
   }
 
@@ -196,8 +269,39 @@ export function TopicDetailInline({ topic, context, roleTitle, roleId }) {
                 
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Code / Practical Example</h4>
+                  {detail.isCodeOnly && (
+                    <div style={{ marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Language</span>
+                      <select
+                        value={selectedLanguage}
+                        onChange={handleLanguageChange}
+                        disabled={isTranslating}
+                        style={{
+                          background: 'var(--surface-strong, #f8fafc)',
+                          color: 'var(--text-color, #111827)',
+                          border: '1px solid var(--border-color, #d1d5db)',
+                          borderRadius: '8px',
+                          padding: '0.5rem 0.75rem',
+                          fontSize: '0.92rem',
+                          fontWeight: 600,
+                          cursor: isTranslating ? 'wait' : 'pointer',
+                        }}
+                      >
+                        {CODE_LANGUAGES.map((language) => (
+                          <option key={language.value} value={language.value}>
+                            {language.label}
+                          </option>
+                        ))}
+                      </select>
+                      {isTranslating && (
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Translating...
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.7, background: 'var(--bg-color, #f9fafb)', padding: '1.2rem', borderRadius: '8px', borderLeft: '4px solid var(--brand, #3b82f6)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                    {detail.illustration || detail.example}
+                    {displayCode || detail.illustration || detail.example}
                   </p>
                 </div>
 

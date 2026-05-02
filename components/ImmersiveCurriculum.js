@@ -161,34 +161,38 @@ function OutcomeBrick({ outcome, moduleTitle, roleId, roleTitle, isLoaded, learn
                  </div>
                ) : detail ? (
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.5s ease' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--brand)' }}>Definition</h4>
-                      <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: 1.6, color: 'var(--text-color)' }}>{detail.definition}</p>
-                    </div>
-
-                    <div className="topic-detail-two-col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>
-                      <div style={{ background: 'var(--bg-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Core Concepts</h4>
-                        <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-color)' }}>
-                          {(detail.descriptionPoints || [detail.description]).map((point, i) => (
-                            <li key={i} style={{ fontSize: '1rem', lineHeight: 1.5 }}>{point}</li>
-                          ))}
-                        </ul>
+                    {!detail.isCodeOnly && (
+                      <div>
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--brand)' }}>Definition</h4>
+                        <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: 1.6, color: 'var(--text-color)' }}>{detail.definition}</p>
                       </div>
+                    )}
 
-                      <div style={{ background: 'var(--bg-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Real World Usage</h4>
-                        <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-color)' }}>
-                          {(detail.usagePoints || []).map((point, i) => (
-                            <li key={i} style={{ fontSize: '1rem', lineHeight: 1.5 }}>{point}</li>
-                          ))}
-                        </ul>
+                    {!detail.isCodeOnly && (
+                      <div className="topic-detail-two-col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>
+                        <div style={{ background: 'var(--bg-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                          <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Core Concepts</h4>
+                          <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-color)' }}>
+                            {(detail.descriptionPoints || [detail.description]).map((point, i) => (
+                              <li key={i} style={{ fontSize: '1rem', lineHeight: 1.5 }}>{point}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div style={{ background: 'var(--bg-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                          <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Real World Usage</h4>
+                          <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-color)' }}>
+                            {(detail.usagePoints || []).map((point, i) => (
+                              <li key={i} style={{ fontSize: '1rem', lineHeight: 1.5 }}>{point}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div style={{ position: 'relative' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.5rem 0' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Practical Illustration</h4>
+                        <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>{detail.isCodeOnly ? 'Code Implementation' : 'Practical Illustration'}</h4>
                         {(() => {
                            const codeStr = detail.illustration || detail.example || '';
                            if (!codeStr) return null;
