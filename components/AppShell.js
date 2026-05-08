@@ -25,7 +25,8 @@ const NAV_ALL = [
     href: '/mock-interview',
     sub: [
       { label: 'Mock Interview',  href: '/mock-interview', desc: 'AI-powered interview practice' },
-      { label: 'Practice',      href: '/practice',            desc: 'Built-in code execution' },
+      { label: 'Practice',        href: '/practice',       desc: 'Built-in code execution' },
+      { label: 'React Sandbox',   href: '/react-sandbox',  desc: 'Full browser-based React IDE' },
     ],
   },
   ...(RESUME_ENABLED ? [{
